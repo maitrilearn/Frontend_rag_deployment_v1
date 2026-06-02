@@ -1,0 +1,10 @@
+
+// ── RAG INDICATOR ─────────────────────────────────────────────────────────
+// Add this inside startLesson() after receiving lesson data:
+// if (data.rag_used) {
+//   const badge = document.createElement("div");
+//   badge.style.cssText = "position:fixed;top:60px;right:16px;padding:4px 12px;background:rgba(63,185,80,.12);border:1px solid rgba(63,185,80,.3);color:#3fb950;border-radius:20px;font-size:11px;font-weight:700;letter-spacing:1px;z-index:99";
+//   badge.textContent = "📚 RAG ACTIVE — " + data.chunks + " chunks";
+//   document.body.appendChild(badge);
+//   setTimeout(() => badge.remove(), 4000);
+// }

@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MaitriLearn</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<div class="container">
+
+  <h1>MaitriLearn 🚀</h1>
+
+  <div style="margin-bottom:20px;">
+    <a href="whiteboard.html" style="display:inline-block;padding:12px 24px;background:#1d4ed8;color:white;border-radius:8px;text-decoration:none;font-weight:600;font-size:15px;">🏫 Open AI Teacher Board (Whiteboard)</a>
+  </div>
+
+  <!-- Notes -->
+  <section>
+    <h2>📚 Notes Sharing</h2>
+    <input id="classInput" placeholder="Class">
+    <input id="subjectInput" placeholder="Subject">
+    <input id="topicInput" placeholder="Topic">
+    <input type="file" id="fileInput">
+    <button onclick="uploadNote()">Upload Note</button>
+    <hr>
+    <input id="searchInput" placeholder="Search Notes">
+    <button onclick="searchNotes()">Search</button>
+    <div id="notesList"></div>
+  </section>
+
+  <!-- Doubt Solver -->
+  <section>
+    <h2>🤖 Doubt Solver</h2>
+    <input id="doubtSubject" placeholder="Subject">
+    <input id="doubtTopic" placeholder="Topic">
+    <textarea id="doubtQuestion" placeholder="Ask your doubt"></textarea>
+    <button onclick="askDoubt(event)">Ask</button>
+    <div id="doubtError" class="error-msg"></div>
+    <pre id="doubtOutput"></pre>
+  </section>
+
+  <!-- AI Tutor -->
+  <section>
+    <h2>🧠 AI Tutor Beta</h2>
+    <input id="tutorTopic" placeholder="Enter Topic">
+    <button onclick="runTutor(event)">Teach Me</button>
+    <div id="tutorError" class="error-msg"></div>
+    <pre id="tutorOutput"></pre>
+  </section>
+
+  <!-- Voice Tutor -->
+  <section>
+    <h2>🎤 Voice Tutor Beta</h2>
+    <textarea id="voiceTutorInput" placeholder="Ask anything..."></textarea>
+    <br><br>
+    <button onclick="generateVoiceTutor()">Ask Voice Tutor</button>
+    <div id="voiceError" class="error-msg"></div>
+    <p id="voiceStatus"></p>
+    <pre id="voiceAnswer"></pre>
+    <audio id="voicePlayer" controls></audio>
+  </section>
+
+  <!-- Feedback -->
+  <section>
+    <h2>💬 Feedback</h2>
+    <textarea id="feedbackText"></textarea>
+    <button onclick="submitFeedback(event)">Submit Feedback</button>
+    <div id="feedbackError" class="error-msg"></div>
+  </section>
+
+</div>
+
+<!-- BUG FIX: config.js loads FIRST so BACKEND_URL/SUPABASE vars are available to all scripts -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/config.js"></script>
+<script src="js/services/notesService.js"></script>
+<script src="js/services/apiService.js"></script>
+<script src="js/ui/notesUI.js"></script>
+<script src="js/ui/doubtUI.js"></script>
+<script src="js/ui/tutorUI.js"></script>
+<script src="js/ui/feedbackUI.js"></script>
+<script src="js/app.js"></script>
+<script src="js/voiceTutor.js"></script>
+
+</body>
+</html>

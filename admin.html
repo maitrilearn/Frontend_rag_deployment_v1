@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>MaitriLearn — RAG Admin</title>
+<link rel="icon" href="data:,">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#080c12;--surface:#0d1421;--border:#1e2d45;
+  --text:#e2eaf6;--muted:#5a7a9e;
+  --accent:#38bdf8;--green:#3fb950;--red:#f87171;--yellow:#fbbf24;
+}
+body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding:32px 20px}
+.wrap{max-width:760px;margin:0 auto}
+.topbar{display:flex;align-items:center;gap:12px;margin-bottom:40px}
+.brand{font-weight:800;font-size:18px;color:var(--accent)}
+.page-title{color:var(--muted);font-size:13px}
+.back{margin-left:auto;color:var(--muted);text-decoration:none;font-size:12px;border:1px solid var(--border);padding:6px 14px;border-radius:6px}
+.back:hover{color:var(--text)}
+
+h2{font-size:20px;font-weight:700;margin-bottom:6px}
+.sub{font-size:13px;color:var(--muted);margin-bottom:24px;line-height:1.6}
+
+.card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:28px;margin-bottom:24px}
+.card-title{font-size:14px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--accent);margin-bottom:20px;display:flex;align-items:center;gap:8px}
+
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+.form-group{display:flex;flex-direction:column;gap:6px}
+label{font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted)}
+input,select{
+  padding:10px 14px;border-radius:8px;
+  border:1px solid var(--border);background:var(--bg);
+  color:var(--text);font-family:inherit;font-size:14px;outline:none;
+  transition:border-color .2s;
+}
+input:focus,select:focus{border-color:var(--accent)}
+input::placeholder{color:var(--muted)}
+
+.btn{
+  padding:11px 24px;border-radius:8px;border:none;
+  font-family:inherit;font-size:13px;font-weight:700;
+  cursor:pointer;transition:all .2s;letter-spacing:.5px;
+}
+.btn-primary{background:var(--accent);color:#080c12}
+.btn-primary:hover:not(:disabled){opacity:.85}
+.btn-primary:disabled{opacity:.35;cursor:not-allowed}
+.btn-danger{background:transparent;color:var(--red);border:1px solid rgba(248,113,113,.3)}
+.btn-danger:hover:not(:disabled){background:rgba(248,113,113,.08)}
+.btn-danger:disabled{opacity:.35;cursor:not-allowed}
+
+.log{
+  background:var(--bg);border:1px solid var(--border);border-radius:8px;
+  padding:14px;font-family:'JetBrains Mono',monospace;font-size:12px;
+  line-height:1.7;min-height:80px;max-height:220px;overflow-y:auto;
+  color:var(--green);white-space:pre-wrap;
+}
+.log .err{color:var(--red)}
+.log .info{color:var(--accent)}
+.log .warn{color:var(--yellow)}
+
+/* Topics table */
+.topics-table{width:100%;border-collapse:collapse;font-size:13px}
+.topics-table th{text-align:left;padding:8px 12px;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border)}
+.topics-table td{padding:10px 12px;border-bottom:1px solid rgba(30,45,69,.5);color:var(--text)}
+.topics-table tr:last-child td{border-bottom:none}
+.topic-pill{display:inline-block;padding:2px 10px;border-radius:20px;font-size:11px;background:rgba(56,189,248,.1);color:var(--accent);border:1px solid rgba(56,189,248,.2)}
+.empty-msg{text-align:center;color:var(--muted);padding:24px;font-size:13px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="topbar">
+    <span class="brand">MaitriLearn</span>
+    <span class="page-title">/ RAG Admin</span>
+    <a href="index.html" class="back">← Dashboard</a>
+  </div>
+
+  <h2>📚 Knowledge Base Manager</h2>
+  <p class="sub">Upload notes to Supabase bucket, then ingest them here to build the RAG knowledge base. The AI teacher will use your notes when teaching.</p>
+
+  <!-- INGEST FORM -->
+  <div class="card">
+    <div class="card-title">⬆️ Ingest Document</div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Filename in Supabase bucket</label>
+        <input id="filename" placeholder="e.g. docker-notes.pdf">
+      </div>
+      <div class="form-group">
+        <label>Topic</label>
+        <select id="topic">
+          <option value="">— Select topic —</option>
+          <option value="Linux">🐧 Linux (RHCSA)</option>
+          <option value="Git">🌿 Git</option>
+          <option value="Docker">🐳 Docker</option>
+          <option value="Kubernetes">☸️ Kubernetes</option>
+          <option value="CI/CD">🔄 CI/CD</option>
+          <option value="AWS">☁️ AWS</option>
+          <option value="Terraform">🏗️ Terraform</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Bucket name</label>
+        <input id="bucket" value="notes" placeholder="notes">
+      </div>
+      <div class="form-group" style="justify-content:flex-end">
+        <label>&nbsp;</label>
+        <button class="btn btn-primary" id="ingestBtn" onclick="ingestDoc()">⬆ Ingest Document</button>
+      </div>
+    </div>
+    <div class="log" id="ingestLog">Ready. Enter a filename and topic to begin.</div>
+  </div>
+
+  <!-- KNOWLEDGE BASE STATUS -->
+  <div class="card">
+    <div class="card-title" style="justify-content:space-between">
+      <span>📊 Knowledge Base Status</span>
+      <button class="btn btn-primary" style="padding:6px 14px;font-size:11px" onclick="loadTopics()">↻ Refresh</button>
+    </div>
+    <div id="topicsWrap">
+      <div class="empty-msg">Click Refresh to load knowledge base status</div>
+    </div>
+  </div>
+
+  <!-- DELETE TOPIC -->
+  <div class="card">
+    <div class="card-title">🗑️ Delete Topic</div>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:16px">Remove all chunks for a topic from the knowledge base. This cannot be undone.</p>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Topic to delete</label>
+        <input id="deleteTopic" placeholder="e.g. Docker">
+      </div>
+      <div class="form-group" style="justify-content:flex-end">
+        <label>&nbsp;</label>
+        <button class="btn btn-danger" onclick="deleteTopic()">🗑 Delete Topic</button>
+      </div>
+    </div>
+    <div class="log" id="deleteLog" style="min-height:40px">—</div>
+  </div>
+
+  <!-- TEST SEARCH -->
+  <div class="card">
+    <div class="card-title">🔍 Test RAG Search</div>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:16px">Test what chunks get retrieved for a query — use this to verify ingestion worked.</p>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Search query</label>
+        <input id="searchQuery" placeholder="e.g. how does docker container work">
+      </div>
+      <div class="form-group">
+        <label>Filter by topic (optional)</label>
+        <input id="searchTopic" placeholder="e.g. Docker">
+      </div>
+    </div>
+    <button class="btn btn-primary" style="margin-bottom:14px" onclick="testSearch()">🔍 Search</button>
+    <div class="log" id="searchLog">Enter a query and click Search.</div>
+  </div>
+
+</div>
+
+<script src="js/config.js"></script>
+<script>
+const BACKEND = typeof BACKEND_URL !== "undefined" ? BACKEND_URL : "http://localhost:5000";
+
+function log(elId, msg, type="") {
+  const el = document.getElementById(elId);
+  const cls = type ? `<span class="${type}">${msg}</span>` : msg;
+  el.innerHTML += "\n" + cls;
+  el.scrollTop = el.scrollHeight;
+}
+
+function clearLog(elId, msg="") {
+  document.getElementById(elId).innerHTML = msg;
+}
+
+// ── INGEST ────────────────────────────────────────────────────────────────────
+window.ingestDoc = async function() {
+  const filename = document.getElementById("filename").value.trim();
+  const topic    = document.getElementById("topic").value.trim();
+  const bucket   = document.getElementById("bucket").value.trim() || "notes";
+  const btn      = document.getElementById("ingestBtn");
+
+  if (!filename || !topic) {
+    alert("Please fill in filename and topic"); return;
+  }
+
+  btn.disabled = true;
+  clearLog("ingestLog", `Starting ingestion of "${filename}"...`);
+  log("ingestLog", `Topic: ${topic} | Bucket: ${bucket}`, "info");
+  log("ingestLog", "Downloading file from Supabase...");
+
+  try {
+    const res  = await fetch(`${BACKEND}/rag/ingest`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ filename, topic, bucket })
+    });
+    const data = await res.json();
+
+    if (data.error) {
+      log("ingestLog", `ERROR: ${data.error}`, "err");
+    } else {
+      log("ingestLog", `✅ ${data.message}`, "info");
+      log("ingestLog", `   Chunks stored: ${data.chunks_stored} / ${data.total_chunks}`);
+      log("ingestLog", `   Ready for RAG search on topic: "${topic}"`);
+      loadTopics();
+    }
+  } catch(e) {
+    log("ingestLog", `ERROR: ${e.message} — is backend running?`, "err");
+  }
+  btn.disabled = false;
+};
+
+// ── LOAD TOPICS ───────────────────────────────────────────────────────────────
+window.loadTopics = async function() {
+  const wrap = document.getElementById("topicsWrap");
+  wrap.innerHTML = '<div class="empty-msg">Loading...</div>';
+
+  try {
+    const res  = await fetch(`${BACKEND}/rag/topics`);
+    const data = await res.json();
+
+    if (!data.topics || data.topics.length === 0) {
+      wrap.innerHTML = '<div class="empty-msg">No documents ingested yet. Upload notes to Supabase bucket and ingest them above.</div>';
+      return;
+    }
+
+    wrap.innerHTML = `
+      <table class="topics-table">
+        <thead><tr><th>Topic</th><th>Status</th></tr></thead>
+        <tbody>
+          ${data.topics.map(t => `
+            <tr>
+              <td><span class="topic-pill">${t}</span></td>
+              <td style="color:var(--green)">✓ Ingested</td>
+            </tr>
+          `).join("")}
+        </tbody>
+      </table>
+      <div style="margin-top:12px;font-size:12px;color:var(--muted)">
+        Total chunks in knowledge base: <strong style="color:var(--text)">${data.total_chunks}</strong>
+      </div>`;
+  } catch(e) {
+    wrap.innerHTML = `<div class="empty-msg" style="color:var(--red)">Could not load topics: ${e.message}</div>`;
+  }
+};
+
+// ── DELETE TOPIC ──────────────────────────────────────────────────────────────
+window.deleteTopic = async function() {
+  const topic = document.getElementById("deleteTopic").value.trim();
+  if (!topic) { alert("Enter a topic to delete"); return; }
+  if (!confirm(`Delete ALL chunks for topic "${topic}"? This cannot be undone.`)) return;
+
+  clearLog("deleteLog", `Deleting all chunks for "${topic}"...`);
+  try {
+    const res  = await fetch(`${BACKEND}/rag/delete`, {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ topic })
+    });
+    const data = await res.json();
+    if (data.error) {
+      log("deleteLog", `ERROR: ${data.error}`, "err");
+    } else {
+      log("deleteLog", `✅ Deleted all chunks for "${topic}"`, "info");
+      loadTopics();
+    }
+  } catch(e) {
+    log("deleteLog", `ERROR: ${e.message}`, "err");
+  }
+};
+
+// ── TEST SEARCH ───────────────────────────────────────────────────────────────
+window.testSearch = async function() {
+  const query = document.getElementById("searchQuery").value.trim();
+  const topic = document.getElementById("searchTopic").value.trim();
+  if (!query) { alert("Enter a search query"); return; }
+
+  clearLog("searchLog", `Searching: "${query}"${topic ? ` (topic: ${topic})` : ""}...`);
+  try {
+    const res  = await fetch(`${BACKEND}/rag/search`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ query, topic, top_k: 3 })
+    });
+    const data = await res.json();
+
+    if (data.error) {
+      log("searchLog", `ERROR: ${data.error}`, "err");
+      return;
+    }
+
+    if (data.count === 0) {
+      log("searchLog", "No chunks found. Try ingesting documents first.", "warn");
+      return;
+    }
+
+    log("searchLog", `Found ${data.count} chunks:\n`, "info");
+    data.chunks.forEach((c, i) => {
+      log("searchLog", `── Chunk ${i+1} ──────────────────`);
+      log("searchLog", c.slice(0, 300) + (c.length > 300 ? "..." : ""));
+    });
+  } catch(e) {
+    log("searchLog", `ERROR: ${e.message}`, "err");
+  }
+};
+
+// Auto-load topics on page open
+loadTopics();
+</script>
+</body>
+</html>
