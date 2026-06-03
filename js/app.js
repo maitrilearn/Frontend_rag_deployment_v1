@@ -38,12 +38,19 @@ async function searchNotes() {
     }
 
     notes.forEach(note => {
+      const url = note.url || "#";
       list.innerHTML += `
-        <div>
-          <h3>${note.topic}</h3>
-          <a href="${note.url}" target="_blank">Preview Note</a>
-          <br><br>
-          <a href="${note.url}" download>Download Note</a>
+        <div style="border:1px solid #ddd;padding:12px;border-radius:8px;margin-bottom:10px">
+          <h3 style="margin-bottom:6px">${note.topic || "Untitled"}</h3>
+          <div style="font-size:13px;color:#666;margin-bottom:8px">
+            ${note.subject ? "Subject: " + note.subject + " | " : ""}
+            ${note.student_class ? "Class: " + note.student_class : ""}
+          </div>
+          ${url !== "#"
+            ? `<a href="${url}" target="_blank" style="margin-right:12px">📄 Preview</a>
+               <a href="${url}" download>⬇ Download</a>`
+            : "<span style='color:#999'>No file attached</span>"
+          }
         </div>
       `;
     });
