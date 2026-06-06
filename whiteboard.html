@@ -5,871 +5,739 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>MaitriLearn — AI Teacher Board</title>
 <link rel="icon" href="data:,">
-<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;600;700&family=JetBrains+Mono:wght@400;600&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;600;700&family=JetBrains+Mono:wght@400;500;600&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-/* ── RESET & VARS ─────────────────────────────────────────────────── */
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --bg:       #0d1117;
-  --panel:    #161b22;
-  --border:   #30363d;
-  --board:    #0d2137;
-  --board2:   #0a1929;
-  --chalk:    #e8e0d0;
-  --chalk2:   #c8c0b0;
-  --accent:   #58a6ff;
-  --green:    #3fb950;
-  --yellow:   #d29922;
-  --red:      #f85149;
-  --purple:   #bc8cff;
-  --orange:   #ffa657;
-  --cyan:     #39d3f0;
-  --text:     #e6edf3;
-  --muted:    #8b949e;
-  --sidebar:  240px;
+  --bg:#080c12;--panel:#0d1421;--border:#1e2d45;--border2:#243650;
+  --chalk:#e2eaf6;--chalk2:#94a3b8;--board:#0a1929;
+  --accent:#58a6ff;--green:#3fb950;--yellow:#fbbf24;
+  --red:#f87171;--purple:#bc8cff;--orange:#ffa657;--cyan:#39d3f0;
+  --text:#e6edf3;--muted:#8b949e;--sidebar:260px;
 }
 html,body{height:100%;overflow:hidden;font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text)}
-
-/* ── LAYOUT ───────────────────────────────────────────────────────── */
 .app{display:flex;flex-direction:column;height:100vh}
 
-/* topbar */
-.topbar{
-  display:flex;align-items:center;gap:16px;
-  padding:0 20px;height:50px;flex-shrink:0;
-  background:var(--panel);border-bottom:1px solid var(--border);
-  font-size:13px;
-}
-.topbar-logo{font-weight:700;color:var(--accent);font-size:15px;letter-spacing:.5px}
-.topbar-sep{color:var(--border);margin:0 4px}
+/* ── TOPBAR ── */
+.topbar{display:flex;align-items:center;gap:14px;padding:0 20px;height:50px;flex-shrink:0;background:var(--panel);border-bottom:1px solid var(--border);font-size:13px}
+.topbar-logo{font-weight:700;color:var(--accent);font-size:15px;text-decoration:none}
+.topbar-sep{color:var(--border2)}
 .topbar-title{color:var(--muted)}
-.topbar-spacer{flex:1}
-.topbar-back{color:var(--muted);text-decoration:none;font-size:12px;transition:color .2s}
+.topbar-space{flex:1}
+.topbar-back{color:var(--muted);text-decoration:none;font-size:12px;padding:5px 12px;border:1px solid var(--border2);border-radius:6px;transition:color .2s}
 .topbar-back:hover{color:var(--accent)}
 
-/* main */
+/* ── MAIN ── */
 .main{display:flex;flex:1;overflow:hidden}
 
-/* ── LEFT SIDEBAR ─────────────────────────────────────────────────── */
-.sidebar{
-  width:var(--sidebar);flex-shrink:0;
-  background:var(--panel);border-right:1px solid var(--border);
-  display:flex;flex-direction:column;
-  overflow:hidden;
-}
-.sidebar-top{padding:16px;border-bottom:1px solid var(--border)}
-
-/* avatar */
-.avatar-area{display:flex;flex-direction:column;align-items:center;gap:10px;padding:16px 12px 0}
-.avatar-ring{
-  width:70px;height:70px;border-radius:50%;
-  background:linear-gradient(135deg,#1c2938,#0d1f31);
-  border:2px solid var(--border);
-  display:flex;align-items:center;justify-content:center;
-  font-size:32px;position:relative;transition:border-color .3s;
-}
-.avatar-ring.talking{
-  border-color:var(--accent);
-  box-shadow:0 0 0 4px rgba(88,166,255,.15);
-  animation:avatarPulse 1s ease-in-out infinite;
-}
-@keyframes avatarPulse{0%,100%{box-shadow:0 0 0 4px rgba(88,166,255,.15)}50%{box-shadow:0 0 0 8px rgba(88,166,255,.08)}}
-
-.tutor-name{font-size:11px;font-weight:700;color:var(--accent);letter-spacing:2px;text-align:center}
-
-.speech-bubble{
-  background:var(--bg);border:1px solid var(--border);border-radius:10px;
-  padding:10px 12px;font-size:12px;color:var(--chalk2);line-height:1.5;
-  text-align:center;min-height:48px;position:relative;
-  margin:0 8px 8px;
-}
-.speech-bubble::before{
-  content:'';position:absolute;top:-7px;left:50%;transform:translateX(-50%);
-  border:4px solid transparent;border-bottom-color:var(--border);
-}
-.speech-bubble::after{
-  content:'';position:absolute;top:-5px;left:50%;transform:translateX(-50%);
-  border:4px solid transparent;border-bottom-color:var(--bg);
-}
-
-/* controls */
-.controls{display:flex;flex-direction:column;gap:6px;padding:12px}
-.topic-wrap{display:flex;flex-direction:column;gap:6px}
-.topic-input{
-  width:100%;padding:9px 12px;
-  border-radius:7px;border:1px solid var(--border);
-  background:var(--bg);color:var(--text);
-  font-family:inherit;font-size:13px;outline:none;
-  transition:border-color .2s;
-}
+/* ── SIDEBAR ── */
+.sidebar{width:var(--sidebar);flex-shrink:0;background:var(--panel);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
+.avatar-area{display:flex;flex-direction:column;align-items:center;gap:8px;padding:14px 12px 0}
+.avatar-ring{width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,#1c2938,#0d1f31);border:2px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:28px;transition:border-color .3s}
+.avatar-ring.talking{border-color:var(--accent);box-shadow:0 0 0 4px rgba(88,166,255,.15);animation:avatarPulse 1s ease-in-out infinite}
+@keyframes avatarPulse{0%,100%{box-shadow:0 0 0 4px rgba(88,166,255,.15)}50%{box-shadow:0 0 0 8px rgba(88,166,255,.05)}}
+.tutor-name{font-size:10px;font-weight:700;color:var(--accent);letter-spacing:2px;text-align:center}
+.speech-bubble{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:9px 11px;font-size:11.5px;color:var(--chalk2);line-height:1.5;text-align:center;min-height:44px;position:relative;margin:0 8px 6px}
+.speech-bubble::before{content:'';position:absolute;top:-7px;left:50%;transform:translateX(-50%);border:4px solid transparent;border-bottom-color:var(--border)}
+.speech-bubble::after{content:'';position:absolute;top:-5px;left:50%;transform:translateX(-50%);border:4px solid transparent;border-bottom-color:var(--bg)}
+.controls{display:flex;flex-direction:column;gap:6px;padding:10px 12px}
+.topic-input{width:100%;padding:9px 12px;border-radius:7px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-family:inherit;font-size:13px;outline:none;transition:border-color .2s}
 .topic-input:focus{border-color:var(--accent)}
 .topic-input::placeholder{color:var(--muted)}
-
-.btn{
-  width:100%;padding:9px;border-radius:7px;border:none;
-  font-family:inherit;font-size:12px;font-weight:600;
-  cursor:pointer;transition:all .2s;letter-spacing:.5px;
-}
-.btn-primary{
-  background:var(--accent);color:#0d1117;
-  box-shadow:0 0 16px rgba(88,166,255,.2);
-}
+.btn{width:100%;padding:9px;border-radius:7px;border:none;font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;transition:all .2s;letter-spacing:.5px}
+.btn-primary{background:var(--accent);color:#080c12;box-shadow:0 0 16px rgba(88,166,255,.2)}
 .btn-primary:hover:not(:disabled){box-shadow:0 0 24px rgba(88,166,255,.35);transform:translateY(-1px)}
 .btn-primary:disabled{opacity:.35;cursor:not-allowed;transform:none}
 .btn-secondary{background:transparent;color:var(--yellow);border:1px solid var(--border)}
-.btn-secondary:hover:not(:disabled){background:rgba(210,153,34,.08)}
+.btn-secondary:hover:not(:disabled){background:rgba(251,191,36,.08)}
 .btn-secondary:disabled{opacity:.3;cursor:not-allowed}
 .btn-danger{background:transparent;color:var(--red);border:1px solid var(--border)}
 .btn-danger:hover{background:rgba(248,81,73,.08)}
-
-/* speed control */
-.speed-row{display:flex;align-items:center;gap:8px;padding:0 12px 8px}
+.speed-row{display:flex;align-items:center;gap:8px;padding:0 12px 6px}
 .speed-label{font-size:11px;color:var(--muted);white-space:nowrap}
 .speed-slider{flex:1;accent-color:var(--accent);height:3px}
-
-/* voice toggle */
-.voice-row{display:flex;align-items:center;gap:8px;padding:0 12px 12px}
+.voice-row{display:flex;align-items:center;gap:8px;padding:0 12px 10px}
 .voice-row label{font-size:12px;color:var(--muted);cursor:pointer;display:flex;align-items:center;gap:6px}
 .voice-row input{accent-color:var(--accent)}
-
-/* step progress */
-.steps-section{flex:1;overflow-y:auto;padding:8px 0}
-.steps-header{font-size:10px;font-weight:700;letter-spacing:2px;color:var(--muted);padding:4px 16px 8px;text-transform:uppercase}
-.step-row{
-  display:flex;align-items:center;gap:8px;
-  padding:7px 16px;font-size:12px;color:var(--muted);
-  cursor:default;transition:all .2s;border-left:2px solid transparent;
-}
+.steps-section{flex:1;overflow-y:auto;padding:6px 0}
+.steps-header{font-size:10px;font-weight:700;letter-spacing:2px;color:var(--muted);padding:4px 16px 6px;text-transform:uppercase}
+.step-row{display:flex;align-items:center;gap:8px;padding:6px 16px;font-size:11.5px;color:var(--muted);border-left:2px solid transparent;transition:all .2s}
 .step-row.active{color:var(--accent);border-left-color:var(--accent);background:rgba(88,166,255,.06)}
 .step-row.done{color:var(--green);border-left-color:var(--green)}
-.step-row .s-icon{font-size:13px;flex-shrink:0}
-.step-row .s-num{
-  width:17px;height:17px;border-radius:50%;
-  display:flex;align-items:center;justify-content:center;
-  font-size:9px;font-weight:700;flex-shrink:0;
-  background:var(--border);color:var(--muted);transition:all .2s;
-}
-.step-row.active .s-num{background:var(--accent);color:#0d1117}
-.step-row.done  .s-num{background:var(--green);color:#0d1117}
-.step-row .s-label{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:11.5px}
-
-/* status pill */
+.s-icon{font-size:12px;flex-shrink:0}
+.s-num{width:16px;height:16px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0;background:var(--border);color:var(--muted);transition:all .2s}
+.step-row.active .s-num{background:var(--accent);color:#080c12}
+.step-row.done .s-num{background:var(--green);color:#080c12}
+.s-label{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:11px}
 .status-row{padding:8px 12px;border-top:1px solid var(--border)}
-.status-pill{
-  display:inline-flex;align-items:center;gap:5px;
-  padding:4px 10px;border-radius:20px;font-size:10px;font-weight:700;
-  letter-spacing:1.5px;text-transform:uppercase;
-  background:rgba(63,185,80,.12);color:var(--green);border:1px solid rgba(63,185,80,.3);
-}
+.status-pill{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;background:rgba(63,185,80,.12);color:var(--green);border:1px solid rgba(63,185,80,.3)}
 .status-pill.loading{background:rgba(88,166,255,.12);color:var(--accent);border-color:rgba(88,166,255,.3)}
 .status-pill.teaching{background:rgba(188,140,255,.12);color:var(--purple);border-color:rgba(188,140,255,.3)}
-.status-pill.paused{background:rgba(210,153,34,.12);color:var(--yellow);border-color:rgba(210,153,34,.3)}
+.status-pill.paused{background:rgba(251,191,36,.12);color:var(--yellow);border-color:rgba(251,191,36,.3)}
 .status-pill.error{background:rgba(248,81,73,.12);color:var(--red);border-color:rgba(248,81,73,.3)}
 .status-dot{width:6px;height:6px;border-radius:50%;background:currentColor}
 .status-pill.loading .status-dot,.status-pill.teaching .status-dot{animation:blink 1s infinite}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
 
-/* ── CHALKBOARD ───────────────────────────────────────────────────── */
-.board-wrap{
-  flex:1;overflow:hidden;position:relative;
-  background:var(--board);
-  background-image:
-    repeating-linear-gradient(0deg,transparent,transparent 39px,rgba(255,255,255,.025) 40px),
-    repeating-linear-gradient(90deg,transparent,transparent 39px,rgba(255,255,255,.025) 40px);
-}
-/* chalk dust top/bottom */
-.board-wrap::before,.board-wrap::after{
-  content:'';position:absolute;left:0;right:0;height:6px;pointer-events:none;z-index:10;
-}
-.board-wrap::before{top:0;background:linear-gradient(to bottom,rgba(232,224,208,.08),transparent)}
-.board-wrap::after{bottom:0;background:linear-gradient(to top,rgba(232,224,208,.08),transparent)}
+/* ── BOARD ── */
+.board-wrap{flex:1;overflow:hidden;position:relative;background:var(--board);background-image:repeating-linear-gradient(0deg,transparent,transparent 39px,rgba(255,255,255,.02) 40px),repeating-linear-gradient(90deg,transparent,transparent 39px,rgba(255,255,255,.02) 40px)}
+.board-wrap::before,.board-wrap::after{content:'';position:absolute;left:0;right:0;height:6px;pointer-events:none;z-index:10}
+.board-wrap::before{top:0;background:linear-gradient(to bottom,rgba(232,224,208,.06),transparent)}
+.board-wrap::after{bottom:0;background:linear-gradient(to top,rgba(232,224,208,.06),transparent)}
+#boardScroll{position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;padding:28px 36px 48px;scroll-behavior:smooth}
 
-/* scrollable board */
-#boardScroll{
-  position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;
-  padding:32px 40px 48px;
-  scroll-behavior:smooth;
-}
+/* RAG badge */
+.rag-badge{position:fixed;top:58px;right:14px;padding:4px 12px;background:rgba(63,185,80,.12);border:1px solid rgba(63,185,80,.3);color:var(--green);border-radius:20px;font-size:10px;font-weight:700;letter-spacing:1px;z-index:99;animation:fadeIn .3s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
 
-/* idle overlay */
-.idle-overlay{
-  position:absolute;inset:0;display:flex;flex-direction:column;
-  align-items:center;justify-content:center;gap:14px;
-  pointer-events:none;transition:opacity .4s;
-}
+.idle-overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;pointer-events:none;transition:opacity .4s}
 .idle-overlay.hidden{opacity:0}
-.idle-icon{font-size:48px;opacity:.2}
+.idle-icon{font-size:48px;opacity:.15}
 .idle-text{text-align:center;color:var(--muted);font-family:'Caveat',cursive;font-size:20px;line-height:1.7}
 
-/* ── STEP CARDS ───────────────────────────────────────────────────── */
-/* STEP MEMORY: cards stack vertically, never erased */
-.step-card{
-  margin-bottom:28px;
-  opacity:0;transform:translateY(18px);
-  transition:opacity .45s ease,transform .45s ease;
-  position:relative;
-}
+/* ── STEP CARDS ── */
+.step-card{margin-bottom:32px;opacity:0;transform:translateY(16px);transition:opacity .4s ease,transform .4s ease}
 .step-card.visible{opacity:1;transform:translateY(0)}
+.step-card:not(:first-child)::before{content:'';display:block;height:1px;background:rgba(255,255,255,.06);margin-bottom:32px}
+.step-heading{font-family:'Caveat',cursive;font-size:26px;font-weight:600;color:var(--chalk);margin-bottom:18px;display:flex;align-items:center;gap:10px}
+.step-heading::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,rgba(232,224,208,.12),transparent)}
 
-/* chalk divider between steps */
-.step-card:not(:first-child)::before{
-  content:'';display:block;
-  height:1px;background:rgba(232,224,208,.08);
-  margin-bottom:28px;
-}
+/* ── TITLE ── */
+.title-card{text-align:center;padding:20px 0 8px}
+.title-subject{display:inline-block;padding:3px 14px;border-radius:20px;font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;background:rgba(88,166,255,.12);color:var(--accent);border:1px solid rgba(88,166,255,.3);margin-bottom:16px}
+.title-main{font-family:'Caveat',cursive;font-size:52px;font-weight:700;color:var(--chalk);line-height:1.1;margin-bottom:10px;text-shadow:0 0 40px rgba(232,224,208,.1)}
+.title-subtitle{font-size:15px;color:var(--chalk2);font-style:italic;max-width:600px;margin:0 auto;line-height:1.6}
+.title-line{width:80px;height:3px;margin:18px auto 0;border-radius:2px;background:linear-gradient(90deg,var(--accent),var(--purple))}
 
-/* ── TITLE STEP ───────────────────────────────────────────────────── */
-.title-card{text-align:center;padding:24px 0 8px}
-.title-subject{
-  display:inline-block;padding:3px 14px;border-radius:20px;
-  font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;
-  background:rgba(88,166,255,.12);color:var(--accent);border:1px solid rgba(88,166,255,.3);
-  margin-bottom:18px;
-}
-.title-main{
-  font-family:'Caveat',cursive;font-size:54px;font-weight:700;
-  color:var(--chalk);line-height:1.1;margin-bottom:12px;
-  text-shadow:0 0 40px rgba(232,224,208,.15);
-}
-.title-subtitle{
-  font-size:15px;color:var(--chalk2);font-style:italic;
-  max-width:600px;margin:0 auto;line-height:1.6;
-}
-.title-line{
-  width:80px;height:3px;margin:20px auto 0;border-radius:2px;
-  background:linear-gradient(90deg,var(--accent),var(--purple));
-}
-
-/* ── CONCEPT STEP ─────────────────────────────────────────────────── */
-.concept-card{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-.concept-def,.concept-analogy{
-  padding:18px;border-radius:10px;
-  background:rgba(255,255,255,.03);border:1px solid var(--border);
-}
-.concept-def{border-left:3px solid var(--accent)}
-.concept-analogy{border-left:3px solid var(--yellow)}
-.card-label{
-  font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;
-  margin-bottom:10px;
-}
+/* ── CONCEPT ── */
+.concept-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.concept-def{padding:16px;border-radius:10px;background:rgba(255,255,255,.03);border:1px solid var(--border);border-left:3px solid var(--accent)}
+.concept-analogy{padding:16px;border-radius:10px;background:rgba(255,255,255,.03);border:1px solid var(--border);border-left:3px solid var(--yellow)}
+.card-label{font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;margin-bottom:9px}
 .concept-def .card-label{color:var(--accent)}
 .concept-analogy .card-label{color:var(--yellow)}
 .card-text{font-size:14px;color:var(--chalk);line-height:1.7}
 .card-text.chalk{font-family:'Caveat',cursive;font-size:18px;color:var(--chalk2)}
 
-/* ── STEPS STEP ───────────────────────────────────────────────────── */
-.steps-card{display:flex;flex-direction:column;gap:0}
-.step-item{
-  display:flex;gap:16px;align-items:flex-start;
-  padding:14px 0;opacity:0;transform:translateX(-16px);
-  transition:opacity .35s ease,transform .35s ease;
-}
+/* ── STEPS ── */
+.steps-list{display:flex;flex-direction:column;gap:0}
+.step-item{display:flex;gap:14px;align-items:flex-start;padding:13px 0;opacity:0;transform:translateX(-14px);transition:opacity .35s ease,transform .35s ease}
 .step-item.visible{opacity:1;transform:translateX(0)}
-.step-item:not(:last-child){border-bottom:1px solid rgba(255,255,255,.05)}
-.step-num{
-  width:32px;height:32px;border-radius:50%;flex-shrink:0;
-  display:flex;align-items:center;justify-content:center;
-  font-size:13px;font-weight:700;font-family:'JetBrains Mono',monospace;
-  border:1.5px solid;
-}
-.step-name{font-size:14px;font-weight:600;color:var(--chalk);margin-bottom:4px;font-family:'Caveat',cursive;font-size:18px}
+.step-item:not(:last-child){border-bottom:1px solid rgba(255,255,255,.04)}
+.step-num{width:30px;height:30px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;font-family:'JetBrains Mono',monospace;border:1.5px solid}
+.step-name{font-size:15px;font-weight:600;color:var(--chalk);margin-bottom:3px;font-family:'Caveat',cursive;font-size:18px}
 .step-detail{font-size:13px;color:var(--chalk2);line-height:1.6}
 
-/* ── EXAMPLE STEP ─────────────────────────────────────────────────── */
-.example-card{}
-.example-scenario{
-  font-size:14px;color:var(--chalk2);line-height:1.6;
-  padding:14px;background:rgba(255,255,255,.03);border-radius:8px;
-  border-left:3px solid var(--green);margin-bottom:14px;
-  font-style:italic;
-}
-.code-block{
-  background:#0d1117;border:1px solid var(--border);border-radius:8px;
-  padding:14px 16px;margin-bottom:14px;overflow-x:auto;
-  font-family:'JetBrains Mono',monospace;font-size:13px;
-  color:var(--green);line-height:1.6;
-}
-.code-prompt{color:var(--cyan);user-select:none}
+/* ── EXAMPLE / CODE ── */
+.example-scenario{font-size:14px;color:var(--chalk2);line-height:1.6;padding:12px 14px;background:rgba(255,255,255,.03);border-radius:8px;border-left:3px solid var(--green);margin-bottom:12px;font-style:italic}
+
+/* Code block with syntax highlighting */
+.code-wrap{background:#060d16;border:1px solid var(--border2);border-radius:10px;overflow:hidden;margin-bottom:12px}
+.code-header{display:flex;align-items:center;justify-content:space-between;padding:8px 14px;background:#0a1520;border-bottom:1px solid var(--border)}
+.code-lang{font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted);font-family:'JetBrains Mono',monospace}
+.code-dots{display:flex;gap:5px}
+.code-dot{width:10px;height:10px;border-radius:50%}
+.code-body{padding:14px 16px;font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.8;overflow-x:auto;min-height:40px}
+/* Syntax colors */
+.tok-keyword{color:#ff7b72}
+.tok-string{color:#a5d6ff}
+.tok-comment{color:#8b949e;font-style:italic}
+.tok-value{color:#79c0ff}
+.tok-tag{color:#7ee787}
+.tok-attr{color:#ffa657}
+.tok-prompt{color:var(--green);font-weight:700;user-select:none}
+.tok-output{color:var(--chalk2)}
+.tok-plain{color:var(--chalk)}
+.chalk-cursor{display:inline-block;width:2px;height:1em;background:var(--chalk);vertical-align:text-bottom;animation:blink .7s step-end infinite;margin-left:1px}
+
 .example-explanation{font-size:13px;color:var(--chalk2);line-height:1.7}
 
-/* ── DIAGRAM STEP ─────────────────────────────────────────────────── */
-.diagram-card-wrap{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-top:4px}
-.diag-el{
-  padding:16px;border-radius:10px;
-  background:rgba(255,255,255,.03);border:1px solid var(--border);
-  opacity:0;transform:translateY(14px);
-  transition:opacity .35s ease,transform .35s ease;
-}
-.diag-el.visible{opacity:1;transform:translateY(0)}
-.diag-num{
-  width:26px;height:26px;border-radius:50%;
-  display:flex;align-items:center;justify-content:center;
-  font-size:11px;font-weight:700;margin-bottom:10px;
-}
-.diag-label{font-size:14px;font-weight:600;color:var(--chalk);margin-bottom:6px;font-family:'Caveat',cursive;font-size:17px}
-.diag-desc{font-size:12px;color:var(--muted);line-height:1.5}
-.diag-role{
-  display:inline-block;margin-top:8px;padding:2px 8px;border-radius:4px;
-  font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;
-}
-
-/* ── COMPARISON STEP ──────────────────────────────────────────────── */
-.comparison-grid{display:grid;grid-template-columns:1fr 1fr;gap:2px;margin-top:4px;border-radius:10px;overflow:hidden}
-.comp-side{padding:18px;background:rgba(255,255,255,.03)}
+/* ── COMPARISON ── */
+.comparison-grid{display:grid;grid-template-columns:1fr 1fr;gap:2px;border-radius:10px;overflow:hidden;margin-top:4px}
+.comp-side{padding:16px;background:rgba(255,255,255,.03)}
 .comp-side.left{border-left:3px solid var(--red)}
 .comp-side.right{border-left:3px solid var(--green)}
-.comp-label{font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:12px}
+.comp-label{font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:10px}
 .comp-side.left .comp-label{color:var(--red)}
 .comp-side.right .comp-label{color:var(--green)}
-.comp-point{
-  display:flex;gap:8px;align-items:flex-start;margin-bottom:8px;
-  font-size:13px;color:var(--chalk2);line-height:1.5;
-  opacity:0;transform:translateX(-10px);
-  transition:opacity .3s ease,transform .3s ease;
-}
+.comp-point{display:flex;gap:8px;align-items:flex-start;margin-bottom:8px;font-size:13px;color:var(--chalk2);line-height:1.5;opacity:0;transform:translateX(-8px);transition:opacity .3s ease,transform .3s ease}
 .comp-point.visible{opacity:1;transform:translateX(0)}
-.comp-point .cp-icon{flex-shrink:0;margin-top:1px}
+.cp-icon{flex-shrink:0;margin-top:1px}
 
-/* ── KEYPOINTS STEP ───────────────────────────────────────────────── */
+/* ── ARCHITECTURE DIAGRAM ── */
+.arch-canvas-wrap{position:relative;width:100%;overflow:hidden}
+.arch-svg{width:100%;overflow:visible}
+.arch-node{opacity:0;transition:opacity .4s ease,transform .4s ease;transform:translateY(10px)}
+.arch-node.visible{opacity:1;transform:translateY(0)}
+.arch-arrow{opacity:0;transition:opacity .5s ease}
+.arch-arrow.visible{opacity:1}
+.arch-label-text{font-family:'Caveat',cursive;font-size:14px;font-weight:600;fill:var(--chalk)}
+.arch-sub-text{font-family:'DM Sans',sans-serif;font-size:11px;fill:var(--chalk2)}
+.arch-highlight{opacity:0;transition:opacity .3s ease}
+.arch-highlight.visible{opacity:1}
+
+/* ── FLOW DIAGRAM ── */
+.flow-wrap{overflow-x:auto;padding-bottom:8px;margin-top:4px}
+.flow-row{display:flex;align-items:center;gap:0;min-width:max-content}
+.flow-node{display:flex;flex-direction:column;align-items:center;gap:0;opacity:0;transform:scale(.8);transition:opacity .35s ease,transform .35s ease}
+.flow-node.visible{opacity:1;transform:scale(1)}
+.flow-box{padding:10px 18px;border-radius:10px;font-size:13px;font-weight:600;font-family:'Caveat',cursive;font-size:16px;text-align:center;min-width:110px;border:1.5px solid;position:relative}
+.flow-box-sub{font-size:11px;color:var(--muted);text-align:center;margin-top:4px;font-family:'DM Sans',sans-serif;max-width:120px}
+.flow-connector{display:flex;align-items:center;padding:0 2px;opacity:0;transition:opacity .3s ease}
+.flow-connector.visible{opacity:1}
+.flow-arrow-line{height:2px;width:32px;background:var(--muted)}
+.flow-arrow-head{width:0;height:0;border-top:5px solid transparent;border-bottom:5px solid transparent;border-left:8px solid var(--muted)}
+
+/* ── TIMELINE ── */
+.timeline-wrap{position:relative;padding:8px 0 16px;margin-top:4px}
+.timeline-line{position:absolute;top:32px;left:24px;right:24px;height:2px;background:var(--border2);border-radius:2px;overflow:hidden}
+.timeline-progress{height:100%;width:0;background:linear-gradient(90deg,var(--accent),var(--purple));transition:width .8s ease;border-radius:2px}
+.timeline-nodes{display:flex;justify-content:space-between;position:relative;z-index:1;padding:0 24px}
+.tl-node{display:flex;flex-direction:column;align-items:center;gap:0;flex:1;max-width:120px;opacity:0;transform:translateY(12px);transition:opacity .35s ease,transform .35s ease}
+.tl-node.visible{opacity:1;transform:translateY(0)}
+.tl-dot{width:18px;height:18px;border-radius:50%;border:2px solid;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;margin-bottom:10px;background:var(--bg);transition:all .3s}
+.tl-dot.active{transform:scale(1.3);box-shadow:0 0 12px currentColor}
+.tl-label{font-size:12px;font-weight:600;color:var(--chalk);text-align:center;font-family:'Caveat',cursive;font-size:15px;line-height:1.3}
+.tl-sub{font-size:10px;color:var(--muted);text-align:center;margin-top:3px;line-height:1.4}
+.tl-duration{font-size:10px;font-family:'JetBrains Mono',monospace;color:var(--accent);margin-top:4px}
+
+/* ── KEYPOINTS ── */
 .keypoints-list{display:flex;flex-direction:column;gap:10px;margin-top:4px}
-.keypoint{
-  display:flex;gap:14px;align-items:flex-start;
-  padding:14px;border-radius:10px;
-  background:rgba(255,255,255,.03);border:1px solid var(--border);
-  opacity:0;transform:translateX(-14px);
-  transition:opacity .35s ease,transform .35s ease;
-}
+.keypoint{display:flex;gap:12px;align-items:flex-start;padding:12px;border-radius:10px;background:rgba(255,255,255,.03);border:1px solid var(--border);opacity:0;transform:translateX(-12px);transition:opacity .35s ease,transform .35s ease}
 .keypoint.visible{opacity:1;transform:translateX(0)}
-.kp-icon{font-size:22px;flex-shrink:0;margin-top:1px}
-.kp-text{font-size:14px;color:var(--chalk);line-height:1.6;font-family:'Caveat',cursive;font-size:18px}
+.kp-icon{font-size:20px;flex-shrink:0;margin-top:2px}
+.kp-text{font-size:14px;color:var(--chalk);line-height:1.6;font-family:'Caveat',cursive;font-size:17px}
 
-/* ── STEP HEADINGS ────────────────────────────────────────────────── */
-.step-heading{
-  font-family:'Caveat',cursive;font-size:26px;font-weight:600;
-  color:var(--chalk);margin-bottom:16px;
-  display:flex;align-items:center;gap:10px;
-}
-.step-heading::after{
-  content:'';flex:1;height:1px;
-  background:linear-gradient(90deg,rgba(232,224,208,.15),transparent);
-}
-
-/* ── TYPING CURSOR ────────────────────────────────────────────────── */
-.chalk-cursor{
-  display:inline-block;width:2px;height:1em;
-  background:var(--chalk);vertical-align:text-bottom;
-  animation:blink .7s step-end infinite;
-  margin-left:2px;
-}
-
-/* ── SCROLLBAR ────────────────────────────────────────────────────── */
+/* scrollbar */
 ::-webkit-scrollbar{width:5px}
 ::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
 
-/* ── RESPONSIVE ───────────────────────────────────────────────────── */
 @media(max-width:700px){
   .main{flex-direction:column}
-  .sidebar{width:100%;height:auto;flex-direction:row;flex-wrap:wrap;border-right:none;border-bottom:1px solid var(--border)}
+  .sidebar{width:100%;height:auto;flex-direction:column;border-right:none;border-bottom:1px solid var(--border)}
   html,body{overflow:auto}
-  .concept-card,.comparison-grid{grid-template-columns:1fr}
+  .concept-grid,.comparison-grid{grid-template-columns:1fr}
 }
 </style>
 </head>
 <body>
 <div class="app">
-
-  <!-- TOP BAR -->
   <header class="topbar">
-    <span class="topbar-logo">MaitriLearn</span>
+    <a href="index.html" class="topbar-logo">MaitriLearn</a>
     <span class="topbar-sep">/</span>
-    <span class="topbar-title">AI Teacher Board</span>
-    <div class="topbar-spacer"></div>
-    <a href="index.html" class="topbar-back">← Back to Dashboard</a>
+    <span class="topbar-title">AI Teacher Board v4</span>
+    <div class="topbar-space"></div>
+    <a href="index.html" class="topbar-back">← Dashboard</a>
   </header>
 
   <div class="main">
-
-    <!-- SIDEBAR -->
     <aside class="sidebar">
-
       <div class="avatar-area">
         <div class="avatar-ring" id="avatarRing">🧑‍🏫</div>
-        <div class="tutor-name" id="tutorName">DR. MAITHRI</div>
+        <div class="tutor-name">DR. MAITHRI</div>
       </div>
-
-      <div class="speech-bubble">
-        <span id="speechText">Hello! Enter a topic and I'll teach you step by step 👋</span>
-      </div>
-
+      <div class="speech-bubble"><span id="speechText">Hello! Enter a topic and I'll teach you! 👋</span></div>
       <div class="controls">
-        <div class="topic-wrap">
-          <input id="topicInput" class="topic-input" placeholder="e.g. Docker, Kubernetes, Git...">
-          <button id="startBtn" class="btn btn-primary" onclick="startLesson()">▶ Start Lesson</button>
-          <button id="pauseBtn" class="btn btn-secondary" onclick="togglePause()" disabled>⏸ Pause</button>
-          <button class="btn btn-danger" onclick="clearLesson()">✕ Clear Board</button>
-        </div>
+        <input id="topicInput" class="topic-input" placeholder="e.g. Docker, Kubernetes, CI/CD...">
+        <button id="startBtn" class="btn btn-primary" onclick="startLesson()">▶ Start Lesson</button>
+        <button id="pauseBtn" class="btn btn-secondary" onclick="togglePause()" disabled>⏸ Pause</button>
+        <button class="btn btn-danger" onclick="clearLesson()">✕ Clear Board</button>
       </div>
-
-      <!-- Speed control -->
       <div class="speed-row">
-        <span class="speed-label">⏱ Speed</span>
+        <span class="speed-label">⏱</span>
         <input type="range" id="speedSlider" class="speed-slider" min="0.5" max="2" step="0.1" value="1">
         <span class="speed-label" id="speedVal">1×</span>
       </div>
-
-      <!-- Voice toggle -->
       <div class="voice-row">
-        <label>
-          <input type="checkbox" id="voiceToggle" checked>
-          🔊 Voice narration
-        </label>
+        <label><input type="checkbox" id="voiceToggle" checked>🔊 Voice</label>
       </div>
-
-      <!-- Step list -->
       <div class="steps-section">
         <div class="steps-header">Lesson Steps</div>
         <div id="stepList"></div>
       </div>
-
-      <!-- Status -->
       <div class="status-row">
-        <div class="status-pill" id="statusPill">
-          <div class="status-dot"></div>
-          <span>READY</span>
-        </div>
+        <div class="status-pill" id="statusPill"><div class="status-dot"></div><span>READY</span></div>
       </div>
-
     </aside>
 
-    <!-- CHALKBOARD -->
     <main class="board-wrap">
-      <div id="boardScroll">
-        <div id="boardContent"></div>
-      </div>
+      <div id="boardScroll"><div id="boardContent"></div></div>
       <div class="idle-overlay" id="idleOverlay">
         <div class="idle-icon">🖊️</div>
-        <div class="idle-text">Enter a topic and press Start Lesson<br>to begin guided teaching</div>
+        <div class="idle-text">Enter a topic and press Start Lesson<br>to begin the AI-powered lesson</div>
       </div>
     </main>
-
   </div>
 </div>
 
 <script src="js/config.js"></script>
 <script>
-// ── CONFIG ────────────────────────────────────────────────────────────────────
 const BACKEND = typeof BACKEND_URL     !== "undefined" ? BACKEND_URL     : "http://localhost:5000";
 const VOICE   = typeof VOICE_TUTOR_URL !== "undefined" ? VOICE_TUTOR_URL : "http://localhost:5001";
 
-// ── STATE ─────────────────────────────────────────────────────────────────────
-let lesson=null, stepIndex=0, paused=false, running=false;
-let currentAudio=null, _timers=[];
+let lesson=null,stepIndex=0,paused=false,running=false;
+let currentAudio=null,_timers=[];
 
-// Speed multiplier from slider
-function getSpeed(){ return parseFloat(document.getElementById("speedSlider").value)||1; }
-document.getElementById("speedSlider").addEventListener("input",e=>{
-  document.getElementById("speedVal").textContent = parseFloat(e.target.value).toFixed(1)+"×";
-});
-
-// ── COLORS ────────────────────────────────────────────────────────────────────
-const STEP_COLORS=[
-  {bg:"rgba(88,166,255,.1)",   border:"rgba(88,166,255,.4)",   text:"#58a6ff",  num:"rgba(88,166,255,.15)"},
-  {bg:"rgba(188,140,255,.1)",  border:"rgba(188,140,255,.4)",  text:"#bc8cff",  num:"rgba(188,140,255,.15)"},
-  {bg:"rgba(63,185,80,.1)",    border:"rgba(63,185,80,.4)",    text:"#3fb950",  num:"rgba(63,185,80,.15)"},
-  {bg:"rgba(210,153,34,.1)",   border:"rgba(210,153,34,.4)",   text:"#d29922",  num:"rgba(210,153,34,.15)"},
-  {bg:"rgba(255,166,87,.1)",   border:"rgba(255,166,87,.4)",   text:"#ffa657",  num:"rgba(255,166,87,.15)"},
-  {bg:"rgba(57,211,240,.1)",   border:"rgba(57,211,240,.4)",   text:"#39d3f0",  num:"rgba(57,211,240,.15)"},
+const COLORS=[
+  {bg:"rgba(88,166,255,.12)",   border:"#58a6ff",  text:"#58a6ff"},
+  {bg:"rgba(188,140,255,.12)",  border:"#bc8cff",  text:"#bc8cff"},
+  {bg:"rgba(63,185,80,.12)",    border:"#3fb950",  text:"#3fb950"},
+  {bg:"rgba(251,191,36,.12)",   border:"#fbbf24",  text:"#fbbf24"},
+  {bg:"rgba(255,166,87,.12)",   border:"#ffa657",  text:"#ffa657"},
+  {bg:"rgba(57,211,240,.12)",   border:"#39d3f0",  text:"#39d3f0"},
 ];
 
-const STEP_ICONS={title:"🏷",concept:"💡",steps:"📋",example:"⚙️",diagram:"🗂",comparison:"⚖️",keypoints:"⭐"};
+const ICONS={title:"🏷",concept:"💡",steps:"📋",example:"⚙️",codefile:"📄",architecture:"🏗",flowdiagram:"🔀",timeline:"⏱",comparison:"⚖️",keypoints:"⭐"};
 
-// ── HELPERS ───────────────────────────────────────────────────────────────────
 const $=id=>document.getElementById(id);
-function wait(ms){ return new Promise(r=>{const t=setTimeout(r,ms/getSpeed());_timers.push(t);}); }
-function clearAllTimers(){ _timers.forEach(clearTimeout);_timers=[];if(currentAudio){currentAudio.pause();currentAudio=null;}setTalking(false); }
-const setStatus=(t,c="")=>{ const e=$("statusPill"); e.innerHTML=`<div class="status-dot"></div><span>${t}</span>`; e.className="status-pill "+c; };
-const setSpeech=t=>{ const e=$("speechText"); if(e) e.textContent=t; };
-const setTalking=y=>{ const r=$("avatarRing"); if(r) y?r.classList.add("talking"):r.classList.remove("talking"); };
-const show=id=>{ const e=document.getElementById(id); if(e) e.classList.add("visible"); };
+function wait(ms){return new Promise(r=>{const t=setTimeout(r,ms/getSpeed());_timers.push(t);})}
+function clearAllTimers(){_timers.forEach(clearTimeout);_timers=[];if(currentAudio){currentAudio.pause();currentAudio=null;}setTalking(false);}
+function getSpeed(){return parseFloat($("speedSlider").value)||1;}
+$("speedSlider").addEventListener("input",e=>{$("speedVal").textContent=parseFloat(e.target.value).toFixed(1)+"×";});
+const setStatus=(t,c="")=>{const e=$("statusPill");e.innerHTML=`<div class="status-dot"></div><span>${t}</span>`;e.className="status-pill "+c;};
+const setSpeech=t=>{const e=$("speechText");if(e)e.textContent=t;};
+const setTalking=y=>{const r=$("avatarRing");if(r)y?r.classList.add("talking"):r.classList.remove("talking");};
+const show=id=>{const e=document.getElementById(id);if(e)e.classList.add("visible");};
+const esc=s=>(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
 
-// ── BOARD HELPERS ─────────────────────────────────────────────────────────────
-function clearBoard(){
-  $("boardContent").innerHTML="";
-  $("idleOverlay").classList.remove("hidden");
-}
-
-// Append a new card to the board (STEP MEMORY — never erase)
+function clearBoard(){$("boardContent").innerHTML="";$("idleOverlay").classList.remove("hidden");}
 function appendCard(html){
   $("idleOverlay").classList.add("hidden");
   const wrap=document.createElement("div");
   wrap.innerHTML=html;
   const card=wrap.firstElementChild;
   $("boardContent").appendChild(card);
-  // Scroll to new card
-  setTimeout(()=>{
-    card.scrollIntoView({behavior:"smooth",block:"start"});
-    card.classList.add("visible");
-  },80);
+  setTimeout(()=>{card.scrollIntoView({behavior:"smooth",block:"start"});card.classList.add("visible");},80);
   return card;
 }
 
-// Typing effect — writes text char by char into an element
-async function typeInto(el, text, speed=28){
-  if(!el) return;
-  el.textContent="";
-  const cursor=document.createElement("span");
-  cursor.className="chalk-cursor";
-  el.appendChild(cursor);
-  for(const ch of text){
-    if(paused) return;
-    cursor.before(document.createTextNode(ch));
-    await wait(speed);
-  }
-  cursor.remove();
-}
-
-// ── SIDEBAR STEP LIST ─────────────────────────────────────────────────────────
 function buildStepList(steps){
   $("stepList").innerHTML=steps.map((s,i)=>`
     <div class="step-row" id="srow_${i}">
-      <span class="s-icon">${STEP_ICONS[s.type]||"•"}</span>
+      <span class="s-icon">${ICONS[s.type]||"•"}</span>
       <span class="s-num">${i+1}</span>
       <span class="s-label">${s.heading||s.text||s.type}</span>
     </div>`).join("");
 }
-function markStep(i,state){
-  document.querySelectorAll(".step-row").forEach((el,idx)=>{
-    el.className="step-row"+(idx===i?" "+state:idx<i?" done":"");
-  });
+function markStep(i,state){document.querySelectorAll(".step-row").forEach((el,idx)=>{el.className="step-row"+(idx===i?" "+state:idx<i?" done":"");});}
+
+async function typeInto(el,text,speed=30){
+  if(!el)return;
+  el.textContent="";
+  const cur=document.createElement("span");cur.className="chalk-cursor";el.appendChild(cur);
+  for(const ch of text){if(paused)return;cur.before(document.createTextNode(ch));await wait(speed);}
+  cur.remove();
+}
+
+// ── SYNTAX HIGHLIGHTER ────────────────────────────────────────────────────────
+function highlight(code, lang) {
+  code = esc(code);
+  if (lang === "bash" || lang === "shell" || lang === "terminal") {
+    return code.split("\n").map(line => {
+      if (line.startsWith("#")) return `<span class="tok-comment">${line}</span>`;
+      if (line.startsWith("$")) return `<span class="tok-prompt">$</span><span class="tok-plain">${line.slice(1)}</span>`;
+      return `<span class="tok-output">${line}</span>`;
+    }).join("\n");
+  }
+  if (lang === "dockerfile") {
+    const kw = /^(FROM|RUN|COPY|ADD|CMD|ENTRYPOINT|ENV|EXPOSE|WORKDIR|ARG|LABEL|USER|VOLUME|HEALTHCHECK|ONBUILD|STOPSIGNAL)\b/;
+    return code.split("\n").map(line => {
+      if (line.startsWith("#")) return `<span class="tok-comment">${line}</span>`;
+      const m = line.match(kw);
+      if (m) return `<span class="tok-keyword">${m[0]}</span>${line.slice(m[0].length)}`;
+      return line;
+    }).join("\n");
+  }
+  if (lang === "yaml" || lang === "yml") {
+    return code.split("\n").map(line => {
+      if (line.trim().startsWith("#")) return `<span class="tok-comment">${line}</span>`;
+      return line.replace(/^(\s*)([\w-]+)(:)/, (_,s,k,c)=>`${s}<span class="tok-attr">${k}</span><span class="tok-plain">${c}</span>`);
+    }).join("\n");
+  }
+  return code;
 }
 
 // ── RENDERERS ─────────────────────────────────────────────────────────────────
 
 async function renderTitle(step){
-  const card=appendCard(`
-    <div class="step-card title-card">
-      <div class="title-subject">${lesson.subject||"AI Lesson"}</div>
-      <h1 class="title-main" id="titleMain"></h1>
-      <p class="title-subtitle" id="titleSub"></p>
-      <div class="title-line"></div>
-    </div>`);
-  await wait(300);
-  await typeInto($("titleMain"), step.text||lesson.title||"Lesson", 38);
+  appendCard(`<div class="step-card title-card">
+    <div class="title-subject">${lesson.subject||"AI Lesson"}</div>
+    <h1 class="title-main" id="titleMain"></h1>
+    <p class="title-subtitle" id="titleSub"></p>
+    <div class="title-line"></div>
+  </div>`);
   await wait(200);
-  if(step.subtitle){
-    const sub=$("titleSub");
-    if(sub){ sub.style.opacity="0";sub.style.transition="opacity .6s"; sub.textContent=step.subtitle; await wait(100); sub.style.opacity="1"; }
-  }
+  await typeInto($("titleMain"),step.text||lesson.title||"Lesson",40);
+  await wait(200);
+  const sub=$("titleSub");
+  if(sub&&step.subtitle){sub.style.cssText="opacity:0;transition:opacity .6s";sub.textContent=step.subtitle;await wait(80);sub.style.opacity="1";}
   await wait(600);
 }
 
 async function renderConcept(step){
-  const card=appendCard(`
-    <div class="step-card">
-      <h2 class="step-heading">${STEP_ICONS.concept} ${step.heading||"Concept"}</h2>
-      <div class="concept-card">
-        <div class="concept-def">
-          <div class="card-label">Definition</div>
-          <p class="card-text" id="cDef"></p>
-        </div>
-        <div class="concept-analogy">
-          <div class="card-label">Think of it like…</div>
-          <p class="card-text chalk" id="cAnalogy"></p>
-        </div>
-      </div>
-    </div>`);
+  appendCard(`<div class="step-card">
+    <h2 class="step-heading">${ICONS.concept} ${step.heading||"Concept"}</h2>
+    <div class="concept-grid">
+      <div class="concept-def"><div class="card-label">Definition</div><p class="card-text" id="cDef"></p></div>
+      <div class="concept-analogy"><div class="card-label">Think of it like…</div><p class="card-text chalk" id="cAn"></p></div>
+    </div>
+  </div>`);
   await wait(300);
-  await typeInto($("cDef"), step.definition||"", 22);
-  await wait(300);
-  await typeInto($("cAnalogy"), step.analogy||"", 18);
+  await typeInto($("cDef"),step.definition||"",20);
+  await wait(250);
+  await typeInto($("cAn"),step.analogy||"",18);
   await wait(400);
 }
 
-async function renderStepsType(step){
+async function renderSteps(step){
   const items=step.items||[];
-  const itemsHTML=items.map((item,i)=>{
-    const c=STEP_COLORS[i%STEP_COLORS.length];
-    return `<div class="step-item" id="si_${i}">
-      <div class="step-num" style="color:${c.text};border-color:${c.border};background:${c.num}">${i+1}</div>
-      <div>
-        <div class="step-name">${item.step}</div>
-        <div class="step-detail">${item.detail}</div>
-      </div>
-    </div>`;
-  }).join("");
-
-  appendCard(`
-    <div class="step-card">
-      <h2 class="step-heading">${STEP_ICONS.steps} ${step.heading||"How It Works"}</h2>
-      <div class="steps-card">${itemsHTML}</div>
-    </div>`);
-
+  const html=items.map((item,i)=>{const c=COLORS[i%COLORS.length];return `<div class="step-item" id="si_${i}"><div class="step-num" style="color:${c.text};border-color:${c.border};background:${c.bg}">${i+1}</div><div><div class="step-name">${item.step}</div><div class="step-detail">${item.detail||""}</div></div></div>`;}).join("");
+  appendCard(`<div class="step-card"><h2 class="step-heading">${ICONS.steps} ${step.heading||"How It Works"}</h2><div class="steps-list">${html}</div></div>`);
   await wait(300);
-  for(let i=0;i<items.length;i++){
-    if(paused) return;
-    show(`si_${i}`);
-    await wait(350);
-  }
+  for(let i=0;i<items.length;i++){if(paused)return;show(`si_${i}`);await wait(320);}
   await wait(400);
 }
 
 async function renderExample(step){
-  const hasCode = step.code && step.code.trim().length > 0;
-  appendCard(`
-    <div class="step-card">
-      <h2 class="step-heading">${STEP_ICONS.example} ${step.heading||"Real Example"}</h2>
-      <div class="example-scenario" id="exScenario"></div>
-      ${hasCode?`<div class="code-block"><span class="code-prompt">$ </span><span id="exCode"></span></div>`:""}
-      <div class="example-explanation" id="exExplain"></div>
-    </div>`);
-
+  const hasCode=step.code&&step.code.trim();
+  const lang=step.lang||"bash";
+  appendCard(`<div class="step-card">
+    <h2 class="step-heading">${ICONS.example} ${step.heading||"Real Example"}</h2>
+    <div class="example-scenario" id="exScen"></div>
+    ${hasCode?`<div class="code-wrap">
+      <div class="code-header"><span class="code-lang">${lang}</span><div class="code-dots"><div class="code-dot" style="background:#f87171"></div><div class="code-dot" style="background:#fbbf24"></div><div class="code-dot" style="background:#3fb950"></div></div></div>
+      <div class="code-body" id="exCode"></div>
+    </div>`:""}
+    <div class="example-explanation" id="exExp"></div>
+  </div>`);
   await wait(300);
-  await typeInto($("exScenario"), step.scenario||"", 20);
-  if(hasCode && $("exCode")){
+  await typeInto($("exScen"),step.scenario||"",18);
+  if(hasCode&&$("exCode")){
     await wait(200);
-    await typeInto($("exCode"), step.code, 30);
+    // Type code with syntax highlighting
+    const lines=step.code.split("\n");
+    const codeEl=$("exCode");
+    for(const line of lines){
+      if(paused)return;
+      const lineEl=document.createElement("div");
+      lineEl.innerHTML=highlight(line,lang);
+      codeEl.appendChild(lineEl);
+      await wait(60);
+    }
   }
   await wait(200);
-  const exp=$("exExplain");
-  if(exp){ exp.style.opacity="0";exp.style.transition="opacity .5s";exp.textContent=step.explanation||""; await wait(100); exp.style.opacity="1"; }
+  const exp=$("exExp");
+  if(exp){exp.style.cssText="opacity:0;transition:opacity .5s";exp.textContent=step.explanation||"";await wait(80);exp.style.opacity="1";}
   await wait(400);
 }
 
-async function renderDiagram(step){
-  const elements=step.elements||[];
-  const roleColor={input:"#58a6ff",process:"#bc8cff",output:"#3fb950"};
-  const cardsHTML=elements.map((el,i)=>{
-    const c=STEP_COLORS[i%STEP_COLORS.length];
-    const role=el.role||"";
-    const roleStyle=roleColor[role.toLowerCase()]||"#8b949e";
-    return `<div class="diag-el" id="de_${i}" style="border-top:2px solid ${c.border}">
-      <div class="diag-num" style="background:${c.num};color:${c.text}">${i+1}</div>
-      <div class="diag-label">${el.label}</div>
-      <div class="diag-desc">${el.description||""}</div>
-      ${role?`<div class="diag-role" style="background:${roleStyle}22;color:${roleStyle}">${role}</div>`:""}
+async function renderCodefile(step){
+  const lang=step.lang||"bash";
+  const filename=step.filename||"";
+  appendCard(`<div class="step-card">
+    <h2 class="step-heading">${ICONS.codefile} ${step.heading||"Code"}</h2>
+    ${step.description?`<div class="example-scenario" id="cfDesc"></div>`:""}
+    <div class="code-wrap">
+      <div class="code-header">
+        <span class="code-lang">${filename||lang}</span>
+        <div class="code-dots"><div class="code-dot" style="background:#f87171"></div><div class="code-dot" style="background:#fbbf24"></div><div class="code-dot" style="background:#3fb950"></div></div>
+      </div>
+      <div class="code-body" id="cfCode"></div>
+    </div>
+    ${step.explanation?`<div class="example-explanation" id="cfExp"></div>`:""}
+  </div>`);
+  await wait(200);
+  if(step.description&&$("cfDesc")) await typeInto($("cfDesc"),step.description,16);
+  const codeEl=$("cfCode");
+  if(codeEl){
+    const lines=(step.code||"").split("\n");
+    for(const line of lines){
+      if(paused)return;
+      const lineEl=document.createElement("div");
+      lineEl.innerHTML=highlight(line,lang);
+      codeEl.appendChild(lineEl);
+      await wait(55);
+    }
+  }
+  if(step.explanation&&$("cfExp")){
+    await wait(200);
+    $("cfExp").style.cssText="opacity:0;transition:opacity .5s";
+    $("cfExp").textContent=step.explanation;
+    await wait(80);
+    $("cfExp").style.opacity="1";
+  }
+  await wait(400);
+}
+
+async function renderArchitecture(step){
+  const nodes=step.nodes||[];
+  const connections=step.connections||[];
+  const cols=Math.min(nodes.length,4);
+  const rows=Math.ceil(nodes.length/cols);
+  const W=160,H=80,gx=80,gy=60,padX=40,padY=30;
+  const svgW=cols*W+(cols-1)*gx+padX*2;
+  const svgH=rows*H+(rows-1)*gy+padY*2+40;
+
+  // Compute node positions
+  const pos={};
+  nodes.forEach((n,i)=>{
+    const col=i%cols, row=Math.floor(i/cols);
+    pos[n.id||i]={x:padX+col*(W+gx)+W/2, y:padY+row*(H+gy)+H/2, idx:i};
+  });
+
+  const nodesHTML=nodes.map((n,i)=>{
+    const c=COLORS[i%COLORS.length];
+    const p=pos[n.id||i];
+    return `<g class="arch-node" id="an_${i}" style="transform-origin:${p.x}px ${p.y}px">
+      <rect x="${p.x-W/2}" y="${p.y-H/2}" width="${W}" height="${H}" rx="10"
+        fill="${c.bg}" stroke="${c.border}" stroke-width="1.5"/>
+      <text x="${p.x}" y="${p.y-8}" text-anchor="middle" class="arch-label-text" fill="${c.text}">${esc(n.label)}</text>
+      <text x="${p.x}" y="${p.y+12}" text-anchor="middle" class="arch-sub-text">${esc(n.description||"")}</text>
+      ${n.role?`<rect x="${p.x-25}" y="${p.y+24}" width="50" height="14" rx="7" fill="${c.bg}" stroke="${c.border}"/>
+      <text x="${p.x}" y="${p.y+34}" text-anchor="middle" style="font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;fill:${c.text}">${esc(n.role)}</text>`:""}
+    </g>`;
+  }).join("");
+
+  const arrowsHTML=connections.map((conn,i)=>{
+    const from=pos[conn.from]||pos[0];
+    const to=pos[conn.to]||pos[1];
+    const mx=(from.x+to.x)/2, my=(from.y+to.y)/2;
+    return `<g class="arch-arrow" id="aa_${i}">
+      <defs><marker id="ah_${i}" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+        <path d="M0,0 L0,6 L8,3 z" fill="${COLORS[i%COLORS.length].border}"/>
+      </marker></defs>
+      <line x1="${from.x}" y1="${from.y}" x2="${to.x}" y2="${to.y}"
+        stroke="${COLORS[i%COLORS.length].border}" stroke-width="1.5" stroke-dasharray="5,3"
+        marker-end="url(#ah_${i})"/>
+      ${conn.label?`<text x="${mx}" y="${my-6}" text-anchor="middle" style="font-family:'DM Sans',sans-serif;font-size:11px;fill:var(--muted)">${esc(conn.label)}</text>`:""}
+    </g>`;
+  }).join("");
+
+  appendCard(`<div class="step-card">
+    <h2 class="step-heading">${ICONS.architecture} ${step.heading||"Architecture"}</h2>
+    <div class="arch-canvas-wrap">
+      <svg class="arch-svg" viewBox="0 0 ${svgW} ${svgH}" height="${svgH}">
+        ${arrowsHTML}${nodesHTML}
+      </svg>
+    </div>
+  </div>`);
+
+  await wait(300);
+  // Draw nodes one by one
+  for(let i=0;i<nodes.length;i++){
+    if(paused)return;
+    show(`an_${i}`);
+    await wait(280);
+  }
+  // Then draw arrows
+  for(let i=0;i<connections.length;i++){
+    if(paused)return;
+    show(`aa_${i}`);
+    await wait(200);
+  }
+  await wait(500);
+}
+
+async function renderFlowdiagram(step){
+  const nodes=step.nodes||[];
+  const nodesHTML=nodes.map((n,i)=>{
+    const c=COLORS[i%COLORS.length];
+    const isDecision=n.type==="decision";
+    const arrow=i<nodes.length-1?`<div class="flow-connector" id="fc_${i}"><div class="flow-arrow-line"></div><div class="flow-arrow-head"></div></div>`:"";
+    return `<div class="flow-node" id="fn_${i}">
+      <div class="flow-box" style="background:${c.bg};border-color:${c.border};color:${c.text};${isDecision?"border-radius:0;transform:rotate(0deg)":""}">${esc(n.label)}</div>
+      ${n.sublabel?`<div class="flow-box-sub">${esc(n.sublabel)}</div>`:""}
+    </div>${arrow}`;
+  }).join("");
+
+  appendCard(`<div class="step-card">
+    <h2 class="step-heading">${ICONS.flowdiagram} ${step.heading||"Process Flow"}</h2>
+    <div class="flow-wrap"><div class="flow-row">${nodesHTML}</div></div>
+  </div>`);
+
+  await wait(300);
+  for(let i=0;i<nodes.length;i++){
+    if(paused)return;
+    show(`fn_${i}`);
+    await wait(300);
+    show(`fc_${i}`);
+    await wait(150);
+  }
+  await wait(400);
+}
+
+async function renderTimeline(step){
+  const nodes=step.nodes||[];
+  const nodesHTML=nodes.map((n,i)=>{
+    const c=COLORS[i%COLORS.length];
+    return `<div class="tl-node" id="tln_${i}">
+      <div class="tl-dot" id="tld_${i}" style="color:${c.text};border-color:${c.border}">${i+1}</div>
+      <div class="tl-label">${esc(n.label)}</div>
+      ${n.sublabel?`<div class="tl-sub">${esc(n.sublabel)}</div>`:""}
+      ${n.duration?`<div class="tl-duration">${esc(n.duration)}</div>`:""}
     </div>`;
   }).join("");
 
-  appendCard(`
-    <div class="step-card">
-      <h2 class="step-heading">${STEP_ICONS.diagram} ${step.heading||"Architecture"}</h2>
-      <div class="diagram-card-wrap">${cardsHTML}</div>
-    </div>`);
+  appendCard(`<div class="step-card">
+    <h2 class="step-heading">${ICONS.timeline} ${step.heading||"Timeline"}</h2>
+    <div class="timeline-wrap">
+      <div class="timeline-line"><div class="timeline-progress" id="tlProg"></div></div>
+      <div class="timeline-nodes">${nodesHTML}</div>
+    </div>
+  </div>`);
 
   await wait(300);
-  for(let i=0;i<elements.length;i++){
-    if(paused) return;
-    show(`de_${i}`);
-    await wait(280);
+  for(let i=0;i<nodes.length;i++){
+    if(paused)return;
+    show(`tln_${i}`);
+    // Highlight current dot
+    const dot=document.getElementById(`tld_${i}`);
+    if(dot)dot.classList.add("active");
+    // Grow progress line
+    const prog=$("tlProg");
+    if(prog) prog.style.width=`${((i+1)/nodes.length)*100}%`;
+    await wait(400);
+    if(dot)dot.classList.remove("active");
   }
-  await wait(400);
+  await wait(500);
 }
 
 async function renderComparison(step){
-  const left=step.left_points||[];
-  const right=step.right_points||[];
+  const left=step.left_points||[], right=step.right_points||[];
   const max=Math.max(left.length,right.length);
-  const leftHTML=left.map((p,i)=>`<div class="comp-point" id="cl_${i}"><span class="cp-icon">✗</span><span>${p}</span></div>`).join("");
-  const rightHTML=right.map((p,i)=>`<div class="comp-point" id="cr_${i}"><span class="cp-icon">✓</span><span>${p}</span></div>`).join("");
-
-  appendCard(`
-    <div class="step-card">
-      <h2 class="step-heading">${STEP_ICONS.comparison} ${step.heading||"Comparison"}</h2>
-      <div class="comparison-grid">
-        <div class="comp-side left">
-          <div class="comp-label">${step.left_label||"Before"}</div>
-          ${leftHTML}
-        </div>
-        <div class="comp-side right">
-          <div class="comp-label">${step.right_label||"After"}</div>
-          ${rightHTML}
-        </div>
-      </div>
-    </div>`);
-
+  appendCard(`<div class="step-card">
+    <h2 class="step-heading">${ICONS.comparison} ${step.heading||"Comparison"}</h2>
+    <div class="comparison-grid">
+      <div class="comp-side left"><div class="comp-label">${esc(step.left_label||"Before")}</div>${left.map((p,i)=>`<div class="comp-point" id="cl_${i}"><span class="cp-icon">✗</span><span>${esc(p)}</span></div>`).join("")}</div>
+      <div class="comp-side right"><div class="comp-label">${esc(step.right_label||"After")}</div>${right.map((p,i)=>`<div class="comp-point" id="cr_${i}"><span class="cp-icon">✓</span><span>${esc(p)}</span></div>`).join("")}</div>
+    </div>
+  </div>`);
   await wait(300);
-  for(let i=0;i<max;i++){
-    if(paused) return;
-    show(`cl_${i}`);
-    show(`cr_${i}`);
-    await wait(300);
-  }
+  for(let i=0;i<max;i++){if(paused)return;show(`cl_${i}`);show(`cr_${i}`);await wait(280);}
   await wait(400);
 }
 
 async function renderKeypoints(step){
   const points=step.points||[];
-  const rowsHTML=points.map((p,i)=>{
-    const icon=typeof p==="object"?p.icon:"⭐";
-    const text=typeof p==="object"?p.text:p;
-    return `<div class="keypoint" id="kp_${i}">
-      <span class="kp-icon">${icon}</span>
-      <div class="kp-text" id="kpText_${i}"></div>
-    </div>`;
-  }).join("");
-
-  appendCard(`
-    <div class="step-card">
-      <h2 class="step-heading">${STEP_ICONS.keypoints} ${step.heading||"Remember This"}</h2>
-      <div class="keypoints-list">${rowsHTML}</div>
-    </div>`);
-
+  appendCard(`<div class="step-card">
+    <h2 class="step-heading">${ICONS.keypoints} ${step.heading||"Key Takeaways"}</h2>
+    <div class="keypoints-list">${points.map((p,i)=>{const icon=typeof p==="object"?p.icon:"⭐";const text=typeof p==="object"?p.text:p;return `<div class="keypoint" id="kp_${i}"><span class="kp-icon">${icon}</span><div class="kp-text" id="kpT_${i}"></div></div>`;}).join("")}</div>
+  </div>`);
   await wait(300);
   for(let i=0;i<points.length;i++){
-    if(paused) return;
+    if(paused)return;
     show(`kp_${i}`);
     const text=typeof points[i]==="object"?points[i].text:points[i];
-    const el=$(`kpText_${i}`);
-    await wait(120);
-    await typeInto(el, text, 18);
-    await wait(180);
+    await wait(100);
+    await typeInto($(`kpT_${i}`),text,16);
+    await wait(160);
   }
   await wait(500);
 }
 
-// ── DISPATCH ──────────────────────────────────────────────────────────────────
 async function renderStep(step){
   switch(step.type){
-    case "title":      await renderTitle(step);      break;
-    case "concept":    await renderConcept(step);    break;
-    case "steps":      await renderStepsType(step);  break;
-    case "example":    await renderExample(step);    break;
-    case "diagram":    await renderDiagram(step);    break;
-    case "comparison": await renderComparison(step); break;
-    case "keypoints":  await renderKeypoints(step);  break;
-    // Fallback for old step types
-    case "text":       await renderConcept({...step, definition:step.body, analogy:""}); break;
-    case "flowchart":  await renderStepsType({...step, items:(step.nodes||[]).map(n=>({step:n,detail:""}))}); break;
-    default:           await renderConcept({...step, definition:step.body||step.text||"", analogy:""}); break;
+    case "title":        await renderTitle(step);        break;
+    case "concept":      await renderConcept(step);      break;
+    case "steps":        await renderSteps(step);        break;
+    case "example":      await renderExample(step);      break;
+    case "codefile":     await renderCodefile(step);     break;
+    case "architecture": await renderArchitecture(step); break;
+    case "flowdiagram":  await renderFlowdiagram(step);  break;
+    case "timeline":     await renderTimeline(step);     break;
+    case "comparison":   await renderComparison(step);   break;
+    case "keypoints":    await renderKeypoints(step);    break;
+    default:             await renderConcept({...step,definition:step.body||step.text||"",analogy:""}); break;
   }
 }
 
 // ── NARRATION ─────────────────────────────────────────────────────────────────
 function narrate(text){
   return new Promise(resolve=>{
-    setSpeech(text);
-    setTalking(true);
+    setSpeech(text);setTalking(true);
     const speed=getSpeed();
-    const fallback=Math.min(Math.max((text.length*55)/speed,2000),10000);
+    const fallback=Math.min(Math.max((text.length*55)/speed,2500),10000);
     const useVoice=$("voiceToggle")&&$("voiceToggle").checked;
-
-    if(!useVoice){
-      _timers.push(setTimeout(()=>{setTalking(false);resolve();},fallback));
-      return;
-    }
-
-    fetch(`${VOICE}/generate`,{
-      method:"POST",headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({prompt:text})
-    })
+    if(!useVoice){_timers.push(setTimeout(()=>{setTalking(false);resolve();},fallback));return;}
+    fetch(`${VOICE}/generate`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({prompt:text})})
     .then(r=>{if(!r.ok)throw new Error(r.status);return r.json();})
     .then(data=>{
-      const audio=new Audio(`${VOICE}${data.audio}`);
-      currentAudio=audio;
+      const audio=new Audio(`${VOICE}${data.audio}`);currentAudio=audio;
       audio.playbackRate=speed;
       audio.onended=()=>{setTalking(false);currentAudio=null;resolve();};
       audio.onerror=()=>{setTalking(false);currentAudio=null;resolve();};
       audio.play().catch(()=>{setTalking(false);resolve();});
     })
-    .catch(()=>{
-      _timers.push(setTimeout(()=>{setTalking(false);resolve();},fallback));
-    });
+    .catch(()=>{_timers.push(setTimeout(()=>{setTalking(false);resolve();},fallback));});
   });
 }
 
-// ── RUNNER ────────────────────────────────────────────────────────────────────
+// ── RUNNER ─────────────────────────────────────────────────────────────────────
 async function runStep(index){
   if(!lesson||index>=lesson.steps.length){
-    setStatus("DONE ✓","");
-    setSpeech("Lesson complete! Well done! 🎉");
-    setTalking(false);
-    if($("startBtn")) $("startBtn").disabled=false;
-    if($("pauseBtn")) $("pauseBtn").disabled=true;
-    running=false; return;
+    setStatus("DONE ✓","");setSpeech("Lesson complete! Well done! 🎉");
+    setTalking(false);if($("startBtn"))$("startBtn").disabled=false;if($("pauseBtn"))$("pauseBtn").disabled=true;running=false;return;
   }
-  if(paused) return;
-
-  stepIndex=index;
-  markStep(index,"active");
+  if(paused)return;
+  stepIndex=index;markStep(index,"active");
   const step=lesson.steps[index];
-
-  await renderStep(step);
-  if(paused) return;
-
-  await narrate(step.narration||step.heading||step.text||"");
-  if(paused) return;
-
-  markStep(index,"done");
-  await wait(400);
-  runStep(index+1);
+  await renderStep(step);if(paused)return;
+  await narrate(step.narration||step.heading||step.text||"");if(paused)return;
+  markStep(index,"done");await wait(350);runStep(index+1);
 }
 
-// ── PUBLIC API ────────────────────────────────────────────────────────────────
+// ── PUBLIC ─────────────────────────────────────────────────────────────────────
 window.startLesson=async function(){
   const topic=($("topicInput")||{}).value?.trim();
   if(!topic){alert("Please enter a topic!");return;}
-
-  clearAllTimers();clearBoard();
-  paused=false;running=true;stepIndex=0;
-
-  $("startBtn").disabled=true;
-  $("pauseBtn").disabled=false;
-  $("pauseBtn").textContent="⏸ Pause";
-  $("stepList").innerHTML="";
-  setStatus("LOADING","loading");
-  setSpeech(`Preparing lesson on "${topic}"...`);
-
+  clearAllTimers();clearBoard();paused=false;running=true;stepIndex=0;
+  $("startBtn").disabled=true;$("pauseBtn").disabled=false;$("pauseBtn").textContent="⏸ Pause";
+  $("stepList").innerHTML="";setStatus("LOADING","loading");setSpeech(`Preparing lesson on "${topic}"...`);
+  // Remove old RAG badge
+  document.querySelectorAll(".rag-badge").forEach(e=>e.remove());
   try{
-    const res=await fetch(`${BACKEND}/whiteboard/lesson`,{
-      method:"POST",headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({topic})
-    });
-    if(!res.ok) throw new Error("Backend "+res.status);
+    const res=await fetch(`${BACKEND}/whiteboard/lesson`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({topic})});
+    if(!res.ok)throw new Error("Backend "+res.status);
     const data=await res.json();
-    if(data.error) throw new Error(data.error);
-
+    if(data.error)throw new Error(data.error);
     lesson=data.lesson;
     buildStepList(lesson.steps);
     setStatus("TEACHING","teaching");
     setSpeech(`Starting: ${lesson.title}!`);
+    // Show RAG badge if used
+    if(data.rag_used&&data.chunks>0){
+      const badge=document.createElement("div");
+      badge.className="rag-badge";badge.textContent=`📚 RAG — ${data.chunks} chunks`;
+      document.body.appendChild(badge);setTimeout(()=>badge.remove(),4000);
+    }
     runStep(0);
-
   }catch(err){
-    console.error(err);
-    setStatus("ERROR","error");
-    setSpeech("Could not load lesson. Check backend connection.");
-    $("startBtn").disabled=false;
-    $("pauseBtn").disabled=true;
-    running=false;
+    console.error(err);setStatus("ERROR","error");setSpeech("Could not load lesson. Check backend.");
+    $("startBtn").disabled=false;$("pauseBtn").disabled=true;running=false;
   }
 };
 
 window.togglePause=function(){
-  paused=!paused;
-  const btn=$("pauseBtn");
-  if(paused){
-    clearAllTimers();
-    btn.textContent="▶ Resume";
-    setStatus("PAUSED","paused");
-    setSpeech("Paused. Press Resume to continue.");
-  }else{
-    btn.textContent="⏸ Pause";
-    setStatus("TEACHING","teaching");
-    runStep(stepIndex);
-  }
+  paused=!paused;const btn=$("pauseBtn");
+  if(paused){clearAllTimers();btn.textContent="▶ Resume";setStatus("PAUSED","paused");setSpeech("Paused. Press Resume.");}
+  else{btn.textContent="⏸ Pause";setStatus("TEACHING","teaching");runStep(stepIndex);}
 };
 
 window.clearLesson=function(){
-  clearAllTimers();clearBoard();
-  lesson=null;running=false;paused=false;
-  $("startBtn").disabled=false;
-  $("pauseBtn").disabled=true;
-  $("pauseBtn").textContent="⏸ Pause";
-  $("stepList").innerHTML="";
-  setStatus("READY","");
-  setSpeech("Hello! Enter a topic and I'll teach you step by step 👋");
+  clearAllTimers();clearBoard();lesson=null;running=false;paused=false;
+  $("startBtn").disabled=false;$("pauseBtn").disabled=true;$("pauseBtn").textContent="⏸ Pause";
+  $("stepList").innerHTML="";setStatus("READY","");
+  setSpeech("Hello! Enter a topic and I'll teach you! 👋");
+  document.querySelectorAll(".rag-badge").forEach(e=>e.remove());
 };
+
+// Auto-start from URL param (DevOps course)
+window.addEventListener("DOMContentLoaded",()=>{
+  const params=new URLSearchParams(window.location.search);
+  const topic=params.get("topic");
+  if(topic){const input=$("topicInput");if(input){input.value=decodeURIComponent(topic);setTimeout(()=>window.startLesson(),600);}}
+});
 </script>
 </body>
 </html>

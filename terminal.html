@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>MaitriLearn — Terminal Simulator</title>
+<link rel="icon" href="data:,">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Syne:wght@600;700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#080c12;--surface:#0d1421;--surface2:#111827;
+  --border:#1e2d45;--border2:#243650;
+  --text:#e2eaf6;--muted:#5a7a9e;--dim:#374151;
+  --green:#3fb950;--green2:#22c55e;
+  --cyan:#38bdf8;--yellow:#fbbf24;
+  --red:#f87171;--purple:#a78bfa;--orange:#fb923c;
+  --linux:#f97316;--git:#f43f5e;--docker:#38bdf8;--k8s:#a78bfa;
+  --prompt:#3fb950;
+}
+html,body{height:100%;font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);overflow:hidden}
+
+/* ── LAYOUT ── */
+.app{display:flex;flex-direction:column;height:100vh}
+.topbar{
+  display:flex;align-items:center;gap:14px;padding:0 20px;height:50px;
+  background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0;
+}
+.brand{font-family:'Syne',sans-serif;font-weight:800;font-size:15px;color:var(--cyan);text-decoration:none}
+.topbar-sep{color:var(--border2)}
+.topbar-page{font-size:12px;color:var(--muted);font-family:'JetBrains Mono',monospace}
+.topbar-space{flex:1}
+.topbar-back{font-size:12px;color:var(--muted);text-decoration:none;padding:5px 12px;border:1px solid var(--border2);border-radius:6px;transition:all .2s}
+.topbar-back:hover{color:var(--text);border-color:var(--cyan)}
+
+.main{display:flex;flex:1;overflow:hidden}
+
+/* ── LEFT: CHALLENGES PANEL ── */
+.challenges-panel{
+  width:280px;flex-shrink:0;background:var(--surface);
+  border-right:1px solid var(--border);
+  display:flex;flex-direction:column;overflow:hidden;
+}
+.panel-header{
+  padding:14px 16px;border-bottom:1px solid var(--border);
+  font-size:11px;font-weight:700;letter-spacing:2px;
+  text-transform:uppercase;color:var(--muted);
+  display:flex;align-items:center;gap:8px;
+}
+.panel-scroll{flex:1;overflow-y:auto;padding:8px 0}
+
+/* Context tabs */
+.ctx-tabs{display:flex;padding:8px 12px;gap:4px;border-bottom:1px solid var(--border)}
+.ctx-tab{
+  flex:1;padding:5px 4px;border-radius:6px;border:none;
+  font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;
+  letter-spacing:.5px;cursor:pointer;transition:all .2s;
+  background:transparent;color:var(--muted);text-transform:uppercase;
+}
+.ctx-tab.active{color:#080c12}
+.ctx-tab[data-ctx="linux"].active{background:var(--linux)}
+.ctx-tab[data-ctx="git"].active{background:var(--git)}
+.ctx-tab[data-ctx="docker"].active{background:var(--docker)}
+.ctx-tab[data-ctx="kubernetes"].active{background:var(--k8s)}
+
+/* Challenge cards */
+.ch-card{
+  padding:12px 16px;border-left:2px solid transparent;
+  cursor:pointer;transition:all .2s;margin:2px 8px;border-radius:8px;
+}
+.ch-card:hover{background:rgba(255,255,255,.04)}
+.ch-card.active{background:rgba(56,189,248,.06);border-left-color:var(--cyan)}
+.ch-card.completed{opacity:.5}
+.ch-card.completed .ch-title::after{content:" ✓";color:var(--green)}
+.ch-day{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:4px;font-family:'JetBrains Mono',monospace}
+.ch-title{font-size:13px;font-weight:600;color:var(--text);margin-bottom:4px}
+.ch-diff{
+  display:inline-block;font-size:9px;padding:2px 7px;border-radius:10px;
+  font-family:'JetBrains Mono',monospace;font-weight:700;letter-spacing:.5px;
+}
+.diff-easy{background:rgba(63,185,80,.12);color:var(--green)}
+.diff-medium{background:rgba(251,191,36,.12);color:var(--yellow)}
+.diff-hard{background:rgba(248,113,113,.12);color:var(--red)}
+
+.free-practice-btn{
+  margin:8px;padding:10px;border-radius:8px;border:1px dashed var(--border2);
+  background:transparent;color:var(--muted);font-family:inherit;font-size:12px;
+  cursor:pointer;transition:all .2s;width:calc(100% - 16px);
+}
+.free-practice-btn:hover,.free-practice-btn.active{
+  border-color:var(--green);color:var(--green);background:rgba(63,185,80,.06);
+}
+
+/* ── RIGHT: TERMINAL ── */
+.terminal-wrap{flex:1;display:flex;flex-direction:column;background:var(--bg);overflow:hidden}
+
+/* Challenge bar */
+.challenge-bar{
+  padding:12px 20px;background:var(--surface2);border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:12px;flex-shrink:0;
+  min-height:56px;
+}
+.challenge-bar.hidden{display:none}
+.ch-bar-label{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);font-family:'JetBrains Mono',monospace;flex-shrink:0}
+.ch-bar-task{font-size:13px;color:var(--text);flex:1;line-height:1.4}
+.ch-bar-hint{
+  font-size:11px;padding:5px 10px;border-radius:6px;
+  background:rgba(251,191,36,.08);color:var(--yellow);
+  border:1px solid rgba(251,191,36,.2);cursor:pointer;
+  white-space:nowrap;flex-shrink:0;transition:all .2s;
+  font-family:'JetBrains Mono',monospace;
+}
+.ch-bar-hint:hover{background:rgba(251,191,36,.15)}
+.ch-success{
+  display:none;padding:6px 14px;border-radius:6px;
+  background:rgba(63,185,80,.12);color:var(--green);
+  border:1px solid rgba(63,185,80,.3);font-size:12px;font-weight:700;
+  animation:popIn .3s cubic-bezier(.34,1.56,.64,1);
+}
+.ch-success.show{display:block}
+@keyframes popIn{from{transform:scale(.8);opacity:0}to{transform:scale(1);opacity:1}}
+
+/* Context indicator */
+.ctx-bar{
+  display:flex;align-items:center;gap:8px;
+  padding:6px 20px;background:var(--surface);
+  border-bottom:1px solid var(--border);flex-shrink:0;
+}
+.ctx-indicator{
+  font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;
+  padding:3px 10px;border-radius:20px;font-family:'JetBrains Mono',monospace;
+}
+.ctx-indicator.linux{background:rgba(249,115,22,.12);color:var(--linux);border:1px solid rgba(249,115,22,.3)}
+.ctx-indicator.git{background:rgba(244,63,94,.12);color:var(--git);border:1px solid rgba(244,63,94,.3)}
+.ctx-indicator.docker{background:rgba(56,189,248,.12);color:var(--docker);border:1px solid rgba(56,189,248,.3)}
+.ctx-indicator.kubernetes{background:rgba(167,139,250,.12);color:var(--k8s);border:1px solid rgba(167,139,250,.3)}
+.ctx-indicator.general{background:rgba(90,122,158,.12);color:var(--muted);border:1px solid var(--border)}
+.ctx-label{font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace}
+.ctx-spacer{flex:1}
+.clear-btn{
+  font-size:11px;color:var(--muted);background:transparent;border:none;
+  cursor:pointer;font-family:'JetBrains Mono',monospace;padding:4px 8px;
+  border-radius:4px;transition:all .2s;
+}
+.clear-btn:hover{color:var(--red);background:rgba(248,113,113,.08)}
+
+/* Terminal output */
+.terminal-output{
+  flex:1;overflow-y:auto;padding:20px;
+  font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.7;
+}
+.term-line{margin-bottom:2px}
+.term-cmd{color:var(--prompt)}
+.term-cmd::before{content:"$ ";color:var(--green);font-weight:700}
+.term-out{color:var(--text);white-space:pre-wrap;word-break:break-all}
+.term-out.error{color:var(--red)}
+.term-out.success{color:var(--green)}
+.term-hint{
+  color:var(--yellow);font-style:italic;
+  padding:6px 10px;border-radius:4px;
+  background:rgba(251,191,36,.06);border-left:2px solid var(--yellow);
+  margin:4px 0;
+}
+.term-hint::before{content:"💡 Hint: "}
+.term-separator{
+  border:none;border-top:1px solid var(--border);margin:12px 0;
+}
+.term-welcome{
+  color:var(--muted);margin-bottom:16px;
+  border:1px solid var(--border);border-radius:8px;padding:14px;
+}
+.term-welcome .tw-title{
+  font-size:14px;font-weight:700;color:var(--cyan);margin-bottom:6px;
+}
+.term-welcome .tw-line{color:var(--muted);margin-bottom:3px}
+
+/* Input bar */
+.input-bar{
+  display:flex;align-items:center;gap:0;
+  padding:12px 20px;background:var(--surface);
+  border-top:1px solid var(--border);flex-shrink:0;
+}
+.input-prompt{
+  font-family:'JetBrains Mono',monospace;font-size:13px;
+  color:var(--green);font-weight:700;white-space:nowrap;margin-right:8px;
+}
+.cmd-input{
+  flex:1;background:transparent;border:none;outline:none;
+  font-family:'JetBrains Mono',monospace;font-size:13px;
+  color:var(--text);caret-color:var(--green);
+}
+.cmd-input::placeholder{color:var(--dim)}
+.run-btn{
+  padding:6px 16px;border-radius:6px;border:none;
+  background:var(--green);color:#080c12;
+  font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;
+  cursor:pointer;transition:all .2s;margin-left:10px;white-space:nowrap;
+}
+.run-btn:hover:not(:disabled){opacity:.85}
+.run-btn:disabled{opacity:.4;cursor:not-allowed}
+.loading-dot{
+  display:inline-block;width:6px;height:6px;border-radius:50%;
+  background:var(--green);margin:0 2px;
+  animation:blink 1.2s infinite;
+}
+.loading-dot:nth-child(2){animation-delay:.3s}
+.loading-dot:nth-child(3){animation-delay:.6s}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+
+/* History navigation arrow hint */
+.input-hint{font-size:10px;color:var(--dim);margin-left:8px;white-space:nowrap;font-family:'JetBrains Mono',monospace}
+
+/* Scrollbar */
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+
+/* Mobile */
+@media(max-width:700px){
+  .main{flex-direction:column}
+  .challenges-panel{width:100%;max-height:200px;border-right:none;border-bottom:1px solid var(--border)}
+  html,body{overflow:auto}
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- TOPBAR -->
+  <header class="topbar">
+    <a href="index.html" class="brand">MaitriLearn</a>
+    <span class="topbar-sep">/</span>
+    <span class="topbar-page">terminal-simulator</span>
+    <div class="topbar-space"></div>
+    <a href="index.html" class="topbar-back">← Dashboard</a>
+  </header>
+
+  <div class="main">
+
+    <!-- CHALLENGES PANEL -->
+    <aside class="challenges-panel">
+      <div class="panel-header">⚡ Challenges</div>
+
+      <div class="ctx-tabs">
+        <button class="ctx-tab active" data-ctx="linux" onclick="switchCtx('linux')">🐧</button>
+        <button class="ctx-tab" data-ctx="git" onclick="switchCtx('git')">🌿</button>
+        <button class="ctx-tab" data-ctx="docker" onclick="switchCtx('docker')">🐳</button>
+        <button class="ctx-tab" data-ctx="kubernetes" onclick="switchCtx('kubernetes')">☸️</button>
+      </div>
+
+      <div class="panel-scroll" id="challengeList"></div>
+
+      <button class="free-practice-btn" id="freePracticeBtn" onclick="startFreePractice()">
+        🖥 Free Practice Mode
+      </button>
+    </aside>
+
+    <!-- TERMINAL -->
+    <main class="terminal-wrap">
+
+      <!-- Challenge bar -->
+      <div class="challenge-bar hidden" id="challengeBar">
+        <span class="ch-bar-label">Task</span>
+        <span class="ch-bar-task" id="chBarTask"></span>
+        <div class="ch-success" id="chSuccess">✅ Challenge Complete!</div>
+        <button class="ch-bar-hint" onclick="showHint()" id="hintBtn">💡 Hint</button>
+      </div>
+
+      <!-- Context bar -->
+      <div class="ctx-bar">
+        <span class="ctx-indicator linux" id="ctxBadge">LINUX</span>
+        <span class="ctx-label" id="ctxLabel">Linux Environment</span>
+        <div class="ctx-spacer"></div>
+        <button class="clear-btn" onclick="clearTerminal()">⌫ clear</button>
+      </div>
+
+      <!-- Output -->
+      <div class="terminal-output" id="termOutput">
+        <div class="term-welcome">
+          <div class="tw-title">🖥 MaitriLearn Terminal Simulator</div>
+          <div class="tw-line">Powered by AI — type real DevOps commands and get realistic output.</div>
+          <div class="tw-line">Select a challenge from the left, or use Free Practice mode.</div>
+          <div class="tw-line" style="margin-top:8px;color:#374151">↑↓ arrow keys for command history • Enter to run</div>
+        </div>
+      </div>
+
+      <!-- Input -->
+      <div class="input-bar">
+        <span class="input-prompt" id="inputPrompt">user@maitrilearn:~$</span>
+        <input
+          id="cmdInput"
+          class="cmd-input"
+          placeholder="type a command..."
+          autocomplete="off"
+          autocorrect="off"
+          autocapitalize="none"
+          spellcheck="false"
+        >
+        <span class="input-hint">↑↓ history</span>
+        <button class="run-btn" id="runBtn" onclick="runCommand()">▶ Run</button>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<script src="js/config.js"></script>
+<script>
+const BACKEND = typeof BACKEND_URL !== "undefined" ? BACKEND_URL : "http://localhost:5000";
+
+// ── STATE ─────────────────────────────────────────────────────────────────────
+let currentCtx       = "linux";
+let currentChallenge = null;
+let completedIds     = new Set(JSON.parse(localStorage.getItem("ml_completed") || "[]"));
+let cmdHistory       = [];
+let historyIndex     = -1;
+let sessionHistory   = [];   // [{cmd, out}] for AI context
+let allChallenges    = {};
+let isRunning        = false;
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+async function init() {
+  try {
+    const res  = await fetch(`${BACKEND}/terminal/challenges`);
+    const data = await res.json();
+    allChallenges = data.challenges;
+  } catch(e) {
+    // Use embedded fallback challenges if backend unreachable
+    allChallenges = FALLBACK_CHALLENGES;
+  }
+  renderChallengeList();
+  setupInput();
+}
+
+// ── CHALLENGE LIST ─────────────────────────────────────────────────────────────
+function renderChallengeList() {
+  const list = document.getElementById("challengeList");
+  const chs  = allChallenges[currentCtx] || [];
+
+  if (!chs.length) {
+    list.innerHTML = `<div style="padding:16px;color:var(--muted);font-size:12px">No challenges yet</div>`;
+    return;
+  }
+
+  // Group by day
+  const byDay = {};
+  chs.forEach(c => {
+    if (!byDay[c.day]) byDay[c.day] = [];
+    byDay[c.day].push(c);
+  });
+
+  list.innerHTML = Object.entries(byDay).map(([day, items]) => `
+    <div style="padding:6px 16px 2px;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--dim);font-family:'JetBrains Mono',monospace">Day ${day}</div>
+    ${items.map(c => `
+      <div class="ch-card ${completedIds.has(c.id)?"completed":""} ${currentChallenge?.id===c.id?"active":""}"
+           onclick="loadChallenge('${c.id}')">
+        <div class="ch-title">${c.title}</div>
+        <span class="ch-diff diff-${c.difficulty}">${c.difficulty}</span>
+      </div>
+    `).join("")}
+  `).join("");
+}
+
+// ── SWITCH CONTEXT ─────────────────────────────────────────────────────────────
+window.switchCtx = function(ctx) {
+  currentCtx = ctx;
+  document.querySelectorAll(".ctx-tab").forEach(t => {
+    t.classList.toggle("active", t.dataset.ctx === ctx);
+  });
+  renderChallengeList();
+  updateCtxBar(ctx);
+};
+
+function updateCtxBar(ctx) {
+  const badge = document.getElementById("ctxBadge");
+  const label = document.getElementById("ctxLabel");
+  const prompts = {
+    linux:"user@maitrilearn:~$", git:"git@maitrilearn:~/project$",
+    docker:"user@docker-host:~$", kubernetes:"kubectl@cluster:~$", general:"user@maitrilearn:~$"
+  };
+  const labels = {
+    linux:"Linux Environment", git:"Git Repository",
+    docker:"Docker Host", kubernetes:"Kubernetes Cluster", general:"Free Practice"
+  };
+  badge.textContent = ctx.toUpperCase();
+  badge.className = `ctx-indicator ${ctx}`;
+  label.textContent = labels[ctx] || "Terminal";
+  document.getElementById("inputPrompt").textContent = prompts[ctx] || "$ ";
+}
+
+// ── LOAD CHALLENGE ─────────────────────────────────────────────────────────────
+window.loadChallenge = function(id) {
+  const all  = Object.values(allChallenges).flat();
+  const ch   = all.find(c => c.id === id);
+  if (!ch) return;
+
+  currentChallenge = ch;
+  currentCtx = ch.context;
+  document.getElementById("freePracticeBtn").classList.remove("active");
+
+  // Update UI
+  const bar = document.getElementById("challengeBar");
+  bar.classList.remove("hidden");
+  document.getElementById("chBarTask").textContent = ch.description;
+  document.getElementById("chSuccess").classList.remove("show");
+  document.getElementById("hintBtn").style.display = "";
+
+  switchCtx(ch.context);
+  renderChallengeList();
+  clearTerminal();
+
+  // Welcome message for challenge
+  appendOutput("info", `Challenge: ${ch.title}`);
+  appendOutput("text", `📋 ${ch.description}`);
+  appendOutput("text", "");
+};
+
+window.showHint = function() {
+  if (currentChallenge) appendOutput("hint", currentChallenge.hint);
+};
+
+// ── FREE PRACTICE ──────────────────────────────────────────────────────────────
+window.startFreePractice = function() {
+  currentChallenge = null;
+  document.getElementById("freePracticeBtn").classList.add("active");
+  document.getElementById("challengeBar").classList.add("hidden");
+  clearTerminal();
+  appendOutput("info", "Free Practice Mode — type any DevOps command");
+  appendOutput("text", "Switch environments using the context tabs on the left.");
+  appendOutput("text", "");
+  renderChallengeList();
+};
+
+// ── RUN COMMAND ────────────────────────────────────────────────────────────────
+window.runCommand = async function() {
+  const input = document.getElementById("cmdInput");
+  const cmd   = input.value.trim();
+  if (!cmd || isRunning) return;
+
+  input.value = "";
+  historyIndex = -1;
+  cmdHistory.unshift(cmd);
+  if (cmdHistory.length > 50) cmdHistory.pop();
+
+  // Built-in commands
+  if (cmd === "clear" || cmd === "cls") { clearTerminal(); return; }
+  if (cmd === "help") { showHelp(); return; }
+
+  // Show command in terminal
+  appendOutput("cmd", cmd);
+
+  // Loading indicator
+  isRunning = true;
+  const runBtn = document.getElementById("runBtn");
+  runBtn.disabled = true;
+  runBtn.innerHTML = `<span class="loading-dot"></span><span class="loading-dot"></span><span class="loading-dot"></span>`;
+
+  try {
+    const res  = await fetch(`${BACKEND}/terminal/run`, {
+      method:  "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({
+        command:   cmd,
+        context:   currentCtx,
+        challenge: currentChallenge?.description || "",
+        history:   sessionHistory.slice(-5)
+      })
+    });
+
+    const data = await res.json();
+
+    if (data.error) {
+      appendOutput("error", "Terminal error: " + data.error);
+    } else {
+      // Show output
+      const isError = data.output && (
+        data.output.includes("Error") ||
+        data.output.includes("error") ||
+        data.output.includes("not found") ||
+        data.output.includes("command not found")
+      );
+      appendOutput(isError ? "error" : "text", data.output || "");
+
+      // Show hint if command was wrong
+      if (data.hint && currentChallenge) {
+        appendOutput("hint", data.hint);
+      }
+
+      // Challenge completed!
+      if (data.challenge_completed && currentChallenge) {
+        completedIds.add(currentChallenge.id);
+        localStorage.setItem("ml_completed", JSON.stringify([...completedIds]));
+        document.getElementById("chSuccess").classList.add("show");
+        document.getElementById("hintBtn").style.display = "none";
+        appendOutput("success", "🎉 Challenge complete! Great job!");
+        renderChallengeList();
+        // Auto-load next challenge after 2s
+        setTimeout(loadNextChallenge, 2000);
+      }
+
+      // Save to session history for context
+      sessionHistory.push({ cmd, out: (data.output||"").slice(0,200) });
+      if (sessionHistory.length > 10) sessionHistory.shift();
+    }
+  } catch(e) {
+    appendOutput("error", "Could not reach backend. Is it running?");
+  }
+
+  isRunning = false;
+  runBtn.disabled = false;
+  runBtn.innerHTML = "▶ Run";
+  scrollBottom();
+};
+
+function loadNextChallenge() {
+  const all = allChallenges[currentCtx] || [];
+  const idx = all.findIndex(c => c.id === currentChallenge?.id);
+  if (idx >= 0 && idx < all.length - 1) {
+    setTimeout(() => loadChallenge(all[idx + 1].id), 500);
+  }
+}
+
+// ── OUTPUT HELPERS ─────────────────────────────────────────────────────────────
+function appendOutput(type, text) {
+  const out = document.getElementById("termOutput");
+  const div = document.createElement("div");
+  div.className = "term-line";
+
+  if (type === "cmd") {
+    div.className += " term-cmd";
+    div.textContent = text;
+  } else if (type === "hint") {
+    div.className += " term-hint";
+    div.textContent = text;
+  } else if (type === "info") {
+    div.innerHTML = `<span style="color:var(--cyan);font-family:'JetBrains Mono',monospace;font-size:12px"># ${text}</span>`;
+  } else if (type === "success") {
+    div.innerHTML = `<span class="term-out success">${text}</span>`;
+  } else if (type === "error") {
+    div.innerHTML = `<span class="term-out error">${escHtml(text)}</span>`;
+  } else {
+    div.innerHTML = `<span class="term-out">${escHtml(text)}</span>`;
+  }
+  out.appendChild(div);
+  scrollBottom();
+}
+
+function escHtml(s) {
+  return (s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
+
+function scrollBottom() {
+  const out = document.getElementById("termOutput");
+  out.scrollTop = out.scrollHeight;
+}
+
+window.clearTerminal = function() {
+  document.getElementById("termOutput").innerHTML = "";
+  sessionHistory = [];
+};
+
+function showHelp() {
+  appendOutput("info", "Available commands:");
+  appendOutput("text", "  clear / cls    — clear terminal");
+  appendOutput("text", "  help           — show this help");
+  appendOutput("text", "  Any DevOps command — AI generates realistic output");
+  appendOutput("text", "");
+}
+
+// ── KEYBOARD NAVIGATION ────────────────────────────────────────────────────────
+function setupInput() {
+  const input = document.getElementById("cmdInput");
+
+  input.addEventListener("keydown", e => {
+    if (e.key === "Enter") { runCommand(); return; }
+    if (e.key === "ArrowUp") {
+      e.preventDefault();
+      if (historyIndex < cmdHistory.length - 1) {
+        historyIndex++;
+        input.value = cmdHistory[historyIndex] || "";
+      }
+    }
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      if (historyIndex > 0) {
+        historyIndex--;
+        input.value = cmdHistory[historyIndex] || "";
+      } else {
+        historyIndex = -1;
+        input.value = "";
+      }
+    }
+  });
+
+  // Auto-focus input on any keypress
+  document.addEventListener("keypress", () => input.focus());
+  input.focus();
+}
+
+// ── FALLBACK CHALLENGES (if backend offline) ───────────────────────────────────
+const FALLBACK_CHALLENGES = {
+  linux: [
+    {id:"linux_1",day:1,title:"List Files",description:"List all files including hidden ones",hint:"Try ls -la",solution:"ls -la",context:"linux",difficulty:"easy"},
+    {id:"linux_2",day:1,title:"Create Directory",description:"Create a directory called myproject in /tmp",hint:"mkdir /tmp/myproject",solution:"mkdir /tmp/myproject",context:"linux",difficulty:"easy"},
+    {id:"linux_3",day:2,title:"File Permissions",description:"Give owner rwx, group rx, others no permissions on file.sh",hint:"chmod 750 file.sh",solution:"chmod 750 file.sh",context:"linux",difficulty:"medium"}
+  ],
+  git: [
+    {id:"git_1",day:1,title:"Init Repo",description:"Initialize a new git repository",hint:"git init",solution:"git init",context:"git",difficulty:"easy"},
+    {id:"git_2",day:2,title:"Stage & Commit",description:"Stage all files and commit with message 'initial commit'",hint:"git add . then git commit -m",solution:"git add .",context:"git",difficulty:"easy"}
+  ],
+  docker: [
+    {id:"docker_1",day:1,title:"Hello World",description:"Run the hello-world Docker container",hint:"docker run hello-world",solution:"docker run hello-world",context:"docker",difficulty:"easy"},
+    {id:"docker_2",day:2,title:"List Containers",description:"Show all containers including stopped ones",hint:"docker ps -a",solution:"docker ps -a",context:"docker",difficulty:"easy"},
+    {id:"docker_3",day:2,title:"Run nginx",description:"Run nginx in detached mode mapping port 8080 to 80",hint:"docker run -d -p 8080:80 nginx",solution:"docker run -d -p 8080:80 nginx",context:"docker",difficulty:"medium"}
+  ],
+  kubernetes: [
+    {id:"k8s_1",day:2,title:"Get Pods",description:"List all pods in all namespaces",hint:"kubectl get pods --all-namespaces",solution:"kubectl get pods --all-namespaces",context:"kubernetes",difficulty:"easy"},
+    {id:"k8s_2",day:3,title:"Create Deployment",description:"Create deployment 'webapp' with nginx image and 3 replicas",hint:"kubectl create deployment webapp --image=nginx --replicas=3",solution:"kubectl create deployment webapp --image=nginx --replicas=3",context:"kubernetes",difficulty:"medium"}
+  ]
+};
+
+init();
+</script>
+</body>
+</html>
