@@ -620,6 +620,15 @@ const FALLBACK_CHALLENGES = {
 };
 
 init();
+
+// Auto-switch context from URL param (DevOps course)
+window.addEventListener("DOMContentLoaded", () => {
+  const params = new URLSearchParams(window.location.search);
+  const ctx = params.get("ctx");
+  if (ctx && ["linux","git","docker","kubernetes"].includes(ctx)) {
+    switchCtx(ctx);
+  }
+});
 </script>
 </body>
 </html>

@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>MaitriLearn — DevOps Course</title>
+<link rel="icon" href="data:,">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500;600&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#080c12;--surface:#0d1421;--surface2:#111827;
+  --border:#1e2d45;--border2:#243650;
+  --text:#e2eaf6;--muted:#5a7a9e;
+  --linux:#f97316;--git:#f43f5e;--docker:#38bdf8;--k8s:#a78bfa;
+  --gold:#fbbf24;--green:#3fb950;
+}
+html{scroll-behavior:smooth}
+body{font-family:'Lato',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;pointer-events:none;background-image:linear-gradient(rgba(56,189,248,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(56,189,248,.03) 1px,transparent 1px);background-size:48px 48px;mask-image:radial-gradient(ellipse 80% 80% at 50% 0%,black 40%,transparent 100%)}
+
+/* TOPBAR */
+.topbar{position:sticky;top:0;z-index:100;display:flex;align-items:center;gap:16px;padding:0 32px;height:54px;background:rgba(8,12,18,.9);backdrop-filter:blur(16px);border-bottom:1px solid var(--border)}
+.topbar-brand{font-family:'Syne',sans-serif;font-weight:800;font-size:16px;color:var(--docker);text-decoration:none}
+.topbar-sep{color:var(--border2);margin:0 4px}
+.topbar-page{font-size:12px;color:var(--muted);font-family:'JetBrains Mono',monospace}
+.topbar-space{flex:1}
+.topbar-back{font-size:12px;color:var(--muted);text-decoration:none;padding:6px 14px;border:1px solid var(--border2);border-radius:6px;transition:all .2s}
+.topbar-back:hover{color:var(--text);border-color:var(--docker)}
+
+/* HERO */
+.hero{padding:56px 32px 40px;max-width:1100px;margin:0 auto;display:grid;grid-template-columns:1fr auto;gap:32px;align-items:center}
+.hero-eyebrow{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--docker);letter-spacing:3px;text-transform:uppercase;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.hero-eyebrow::before{content:'';width:24px;height:1px;background:var(--docker)}
+.hero-title{font-family:'Syne',sans-serif;font-weight:800;font-size:clamp(34px,5vw,52px);line-height:1.05;letter-spacing:-1px;margin-bottom:14px}
+.hero-title span{background:linear-gradient(135deg,var(--docker),var(--k8s));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.hero-sub{font-size:15px;color:var(--muted);line-height:1.7;max-width:500px;font-weight:300}
+.hero-stats{display:flex;flex-direction:column;gap:14px;padding:22px;background:var(--surface);border:1px solid var(--border);border-radius:16px;min-width:150px}
+.hero-stat{text-align:center}
+.hero-stat-num{font-family:'Syne',sans-serif;font-size:30px;font-weight:800;line-height:1;margin-bottom:4px}
+.hero-stat-label{font-size:10px;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase}
+.hero-stat-divider{height:1px;background:var(--border)}
+
+/* TRACKS */
+.tracks{max-width:1100px;margin:0 auto;padding:0 32px 80px;display:flex;flex-direction:column;gap:40px}
+.track-header{display:flex;align-items:center;gap:16px;padding:18px 22px;border-radius:14px 14px 0 0;border:1px solid var(--border);border-bottom:none;cursor:pointer;transition:all .2s;position:relative;overflow:hidden}
+.track[data-track="linux"] .track-header{background:linear-gradient(135deg,rgba(249,115,22,.08),transparent)}
+.track[data-track="git"]   .track-header{background:linear-gradient(135deg,rgba(244,63,94,.08),transparent)}
+.track[data-track="docker"].track-header{background:linear-gradient(135deg,rgba(56,189,248,.08),transparent)}
+.track[data-track="k8s"]   .track-header{background:linear-gradient(135deg,rgba(167,139,250,.08),transparent)}
+.track-icon{width:46px;height:46px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
+.track[data-track="linux"] .track-icon{background:rgba(249,115,22,.12);border:1px solid rgba(249,115,22,.3)}
+.track[data-track="git"]   .track-icon{background:rgba(244,63,94,.12);border:1px solid rgba(244,63,94,.3)}
+.track[data-track="docker"].track-icon{background:rgba(56,189,248,.12);border:1px solid rgba(56,189,248,.3)}
+.track[data-track="k8s"]   .track-icon{background:rgba(167,139,250,.12);border:1px solid rgba(167,139,250,.3)}
+.track-info{flex:1}
+.track-name{font-family:'Syne',sans-serif;font-weight:700;font-size:19px;margin-bottom:4px}
+.track[data-track="linux"] .track-name{color:var(--linux)}
+.track[data-track="git"]   .track-name{color:var(--git)}
+.track[data-track="docker"].track-name{color:var(--docker)}
+.track[data-track="k8s"]   .track-name{color:var(--k8s)}
+.track-desc{font-size:13px;color:var(--muted);line-height:1.5}
+.track-meta{display:flex;gap:10px;align-items:center;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted)}
+.track-badge{padding:3px 10px;border-radius:20px;font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase}
+.track[data-track="linux"] .track-badge{background:rgba(249,115,22,.12);color:var(--linux);border:1px solid rgba(249,115,22,.3)}
+.track[data-track="git"]   .track-badge{background:rgba(244,63,94,.12);color:var(--git);border:1px solid rgba(244,63,94,.3)}
+.track[data-track="docker"].track-badge{background:rgba(56,189,248,.12);color:var(--docker);border:1px solid rgba(56,189,248,.3)}
+.track[data-track="k8s"]   .track-badge{background:rgba(167,139,250,.12);color:var(--k8s);border:1px solid rgba(167,139,250,.3)}
+.track-chevron{font-size:18px;color:var(--muted);transition:transform .3s}
+.track.open .track-chevron{transform:rotate(90deg)}
+
+/* RAG badge on track */
+.track-rag{font-size:10px;padding:2px 8px;border-radius:10px;background:rgba(63,185,80,.1);color:var(--green);border:1px solid rgba(63,185,80,.25);font-family:'JetBrains Mono',monospace;font-weight:700}
+
+/* DAYS GRID */
+.days-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:0;border:1px solid var(--border);border-top:none;border-radius:0 0 14px 14px;overflow:hidden;max-height:0;transition:max-height .4s cubic-bezier(.4,0,.2,1)}
+.track.open .days-grid{max-height:2000px}
+
+.day-card{padding:18px;border-right:1px solid var(--border);border-bottom:1px solid var(--border);background:var(--surface);cursor:pointer;transition:all .2s;position:relative;overflow:hidden;display:flex;flex-direction:column;gap:8px}
+.day-card::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;transform:scaleX(0);transition:transform .2s;transform-origin:left}
+.track[data-track="linux"] .day-card::after{background:var(--linux)}
+.track[data-track="git"]   .day-card::after{background:var(--git)}
+.track[data-track="docker"].day-card::after{background:var(--docker)}
+.track[data-track="k8s"]   .day-card::after{background:var(--k8s)}
+.day-card:hover::after{transform:scaleX(1)}
+.day-card:hover{background:var(--surface2)}
+.day-num{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;letter-spacing:2px;text-transform:uppercase}
+.track[data-track="linux"] .day-num{color:var(--linux)}
+.track[data-track="git"]   .day-num{color:var(--git)}
+.track[data-track="docker"].day-num{color:var(--docker)}
+.track[data-track="k8s"]   .day-num{color:var(--k8s)}
+.day-title{font-family:'Syne',sans-serif;font-weight:700;font-size:14px;color:var(--text);line-height:1.3}
+.day-topics{display:flex;flex-wrap:wrap;gap:4px}
+.day-topic{font-size:10px;padding:2px 7px;border-radius:4px;background:rgba(255,255,255,.04);border:1px solid var(--border2);color:var(--muted);font-family:'JetBrains Mono',monospace}
+.day-rag{font-size:10px;padding:2px 7px;border-radius:4px;background:rgba(63,185,80,.08);border:1px solid rgba(63,185,80,.2);color:var(--green);font-family:'JetBrains Mono',monospace}
+.day-action{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:700;margin-top:4px;font-family:'JetBrains Mono',monospace;opacity:0;transform:translateX(-6px);transition:all .2s}
+.day-card:hover .day-action{opacity:1;transform:translateX(0)}
+.track[data-track="linux"] .day-action{color:var(--linux)}
+.track[data-track="git"]   .day-action{color:var(--git)}
+.track[data-track="docker"].day-action{color:var(--docker)}
+.track[data-track="k8s"]   .day-action{color:var(--k8s)}
+
+/* MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);backdrop-filter:blur(8px);z-index:500;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .25s;padding:20px}
+.modal-overlay.open{opacity:1;pointer-events:all}
+.modal{background:var(--surface);border:1px solid var(--border2);border-radius:20px;width:100%;max-width:520px;transform:translateY(16px) scale(.98);transition:transform .25s;overflow:hidden}
+.modal-overlay.open .modal{transform:translateY(0) scale(1)}
+.modal-top{padding:26px 26px 18px;border-bottom:1px solid var(--border)}
+.modal-track-tag{display:inline-flex;align-items:center;gap:6px;font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;padding:4px 12px;border-radius:20px;margin-bottom:12px}
+.modal-day{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);margin-bottom:7px;letter-spacing:1px}
+.modal-title{font-family:'Syne',sans-serif;font-weight:800;font-size:21px;color:var(--text);margin-bottom:10px;line-height:1.2}
+.modal-topics-label{font-size:11px;color:var(--muted);margin-bottom:7px;letter-spacing:1px;text-transform:uppercase}
+.modal-topics{display:flex;flex-wrap:wrap;gap:5px}
+.modal-topic{font-size:11px;padding:3px 9px;border-radius:5px;background:rgba(255,255,255,.05);border:1px solid var(--border2);color:var(--text);font-family:'JetBrains Mono',monospace}
+.modal-rag-notice{display:none;margin-top:12px;padding:8px 12px;border-radius:8px;background:rgba(63,185,80,.08);border:1px solid rgba(63,185,80,.25);color:var(--green);font-size:12px}
+.modal-rag-notice.show{display:block}
+.modal-body{padding:18px 26px 22px;display:flex;flex-direction:column;gap:12px}
+.modal-desc{font-size:14px;color:var(--muted);line-height:1.7}
+.modal-actions{display:flex;gap:10px}
+.modal-btn-primary{flex:1;padding:12px;border-radius:10px;border:none;font-family:'Syne',sans-serif;font-weight:700;font-size:14px;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px}
+.modal-btn-primary:hover{opacity:.85;transform:translateY(-1px)}
+.modal-btn-secondary{padding:12px 16px;border-radius:10px;background:transparent;border:1px solid var(--border2);color:var(--muted);font-family:inherit;font-size:14px;cursor:pointer;transition:all .2s}
+.modal-btn-secondary:hover{border-color:var(--text);color:var(--text)}
+.modal-btn-terminal{padding:12px 16px;border-radius:10px;background:rgba(63,185,80,.1);border:1px solid rgba(63,185,80,.3);color:var(--green);font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s}
+.modal-btn-terminal:hover{background:rgba(63,185,80,.18)}
+
+/* RESPONSIVE */
+@media(max-width:700px){.hero{grid-template-columns:1fr;gap:20px}.hero-stats{flex-direction:row;min-width:0}.topbar{padding:0 16px}.tracks{padding:0 16px 60px}.hero{padding:36px 16px 28px}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+.track{animation:fadeUp .5s ease both}
+.track:nth-child(1){animation-delay:.1s}.track:nth-child(2){animation-delay:.2s}
+.track:nth-child(3){animation-delay:.3s}.track:nth-child(4){animation-delay:.4s}
+::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <a href="index.html" class="topbar-brand">MaitriLearn</a>
+  <span class="topbar-sep">/</span>
+  <span class="topbar-page">devops-course</span>
+  <div class="topbar-space"></div>
+  <a href="index.html" class="topbar-back">← Dashboard</a>
+</header>
+
+<section class="hero">
+  <div>
+    <div class="hero-eyebrow">Phase 1 Course</div>
+    <h1 class="hero-title">Learn <span>DevOps</span><br>Step by Step</h1>
+    <p class="hero-sub">Day-wise curriculum covering Linux, Git, Docker and Kubernetes. Click any topic — your AI teacher explains it on the whiteboard using RAG-powered content from real notes.</p>
+  </div>
+  <div class="hero-stats">
+    <div class="hero-stat"><div class="hero-stat-num" style="color:var(--docker)">4</div><div class="hero-stat-label">Tracks</div></div>
+    <div class="hero-stat-divider"></div>
+    <div class="hero-stat"><div class="hero-stat-num" style="color:var(--k8s)">28</div><div class="hero-stat-label">Days</div></div>
+    <div class="hero-stat-divider"></div>
+    <div class="hero-stat"><div class="hero-stat-num" style="color:var(--linux)">RAG</div><div class="hero-stat-label">Powered</div></div>
+  </div>
+</section>
+
+<div class="tracks" id="tracks"></div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
+  <div class="modal">
+    <div class="modal-top">
+      <div class="modal-track-tag" id="modalTag"></div>
+      <div class="modal-day" id="modalDay"></div>
+      <div class="modal-title" id="modalTitle"></div>
+      <div class="modal-topics-label">Topics covered</div>
+      <div class="modal-topics" id="modalTopics"></div>
+      <div class="modal-rag-notice" id="modalRag">
+        📚 RAG Active — AI will teach from your uploaded notes for this topic
+      </div>
+    </div>
+    <div class="modal-body">
+      <div class="modal-desc" id="modalDesc"></div>
+      <div class="modal-actions">
+        <button class="modal-btn-primary" id="modalStartBtn" onclick="openWhiteboard()">🏫 Start AI Lesson</button>
+        <button class="modal-btn-terminal" onclick="openTerminal()">💻 Practice</button>
+        <button class="modal-btn-secondary" onclick="closeModalDirect()">✕</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="js/config.js"></script>
+<script>
+const BACKEND = typeof BACKEND_URL !== "undefined" ? BACKEND_URL : "http://localhost:5000";
+
+// ── COURSE DATA ────────────────────────────────────────────────────────────────
+const COURSE = [
+  {
+    id:"linux", icon:"🐧", name:"Linux (RHCSA)", badge:"Foundation", color:"var(--linux)",
+    desc:"Master the Linux command line — the foundation of all DevOps work",
+    days:[
+      {day:1,title:"Getting Started with Linux",topics:["pwd","ls","cd","mkdir","touch","rm"],desc:"Navigate the Linux filesystem and manage files with basic commands.",whiteboard:"Linux basic commands: pwd ls cd mkdir touch rm cp mv explained with examples",terminal:"linux"},
+      {day:2,title:"File Permissions & Ownership",topics:["chmod","chown","rwx","octal"],desc:"Understand how Linux controls who can read, write and execute files.",whiteboard:"Linux file permissions chmod chown rwx notation and octal numbers",terminal:"linux"},
+      {day:3,title:"Hard Links & Soft Links",topics:["ln","symlink","inode","ln -s"],desc:"Learn the difference between hard links and symbolic links.",whiteboard:"Linux hard links vs soft links ln command inodes symbolic links",terminal:"linux"},
+      {day:4,title:"User & Group Management",topics:["useradd","passwd","groupadd","sudo"],desc:"Create and manage users, groups and privileges.",whiteboard:"Linux user management useradd passwd groupadd sudo etc passwd file",terminal:"linux"},
+      {day:5,title:"Process Management",topics:["ps","top","kill","bg","fg","jobs"],desc:"Monitor running processes and manage foreground/background jobs.",whiteboard:"Linux process management ps top kill bg fg jobs commands",terminal:"linux"},
+      {day:6,title:"Text Processing Tools",topics:["grep","sed","awk","cat","tail"],desc:"Search and transform text files using powerful Linux tools.",whiteboard:"Linux text processing grep sed awk cat tail head with examples",terminal:"linux"},
+      {day:7,title:"Networking Basics",topics:["ping","curl","netstat","ss","ip"],desc:"Understand Linux networking commands and troubleshoot connectivity.",whiteboard:"Linux networking commands ping curl netstat ss ip addr firewalld",terminal:"linux"},
+      {day:8,title:"Shell Scripting Basics",topics:["bash","variables","if/else","loops","cron"],desc:"Write Bash scripts to automate repetitive Linux tasks.",whiteboard:"Bash shell scripting variables if-else for loops cron jobs",terminal:"linux"},
+    ]
+  },
+  {
+    id:"git", icon:"🌿", name:"Git & GitHub", badge:"Essential", color:"var(--git)",
+    desc:"Version control every DevOps engineer must know",
+    days:[
+      {day:1,title:"What is Git & Why Use It",topics:["version control","repo","commit"],desc:"Understand what version control is and why Git is the standard.",whiteboard:"Git version control basics what is git repository commit history",terminal:"git"},
+      {day:2,title:"Git Init, Add & Commit",topics:["git init","git add","git commit","git log"],desc:"Learn the core Git workflow — initialize, stage changes, and commit.",whiteboard:"Git workflow git init git add git commit git status git log with examples",terminal:"git"},
+      {day:3,title:"Branching & Merging",topics:["git branch","git checkout","git merge"],desc:"Work on features in isolation with branches and merge safely.",whiteboard:"Git branching git branch git checkout git merge resolving merge conflicts",terminal:"git"},
+      {day:4,title:"Remote Repositories",topics:["git remote","git push","git pull","git clone"],desc:"Connect your local repo to GitHub and collaborate.",whiteboard:"Git remote repositories git remote push pull clone origin with GitHub",terminal:"git"},
+      {day:5,title:"Git Rebase & Cherry-pick",topics:["git rebase","git cherry-pick","git stash"],desc:"Advanced Git techniques for a cleaner project history.",whiteboard:"Git advanced rebase cherry-pick stash HEAD explained",terminal:"git"},
+      {day:6,title:"GitHub Pull Requests & CI",topics:["pull request","code review","GitHub Actions"],desc:"Collaborate using Pull Requests and automate checks.",whiteboard:"GitHub pull requests code review workflow and GitHub Actions CI basics",terminal:"git"},
+    ]
+  },
+  {
+    id:"docker", icon:"🐳", name:"Docker", badge:"Core DevOps", color:"var(--docker)",
+    desc:"Package and run applications in containers",
+    days:[
+      {day:1,title:"What is Docker & Containers",topics:["container","image","VM vs container"],desc:"Understand containerization and why Docker changed development.",whiteboard:"Docker containers explained what is Docker containers vs VMs Docker daemon",terminal:"docker"},
+      {day:2,title:"Docker Images & Containers",topics:["docker pull","docker run","docker ps","registry"],desc:"Pull images from Docker Hub and run your first containers.",whiteboard:"Docker images and containers docker pull run ps stop rm Docker Hub registry",terminal:"docker"},
+      {day:3,title:"Writing a Dockerfile",topics:["FROM","RUN","COPY","CMD","EXPOSE"],desc:"Build your own Docker images by writing a Dockerfile.",whiteboard:"Dockerfile tutorial FROM RUN COPY CMD EXPOSE instructions with examples",terminal:"docker"},
+      {day:4,title:"Docker Volumes & Networking",topics:["docker volume","bind mount","bridge","docker network"],desc:"Persist data and connect containers using volumes and networks.",whiteboard:"Docker volumes and networking bind mounts named volumes bridge network",terminal:"docker"},
+      {day:5,title:"Docker Compose",topics:["docker-compose.yml","services","depends_on"],desc:"Define and run multi-container applications with Docker Compose.",whiteboard:"Docker Compose tutorial docker-compose.yml services networks volumes",terminal:"docker"},
+      {day:6,title:"Docker in Production",topics:["docker logs","inspect","resource limits","multi-stage"],desc:"Best practices for running Docker containers in production.",whiteboard:"Docker production best practices multi-stage builds resource limits security",terminal:"docker"},
+      {day:7,title:"Docker Registry & CI/CD",topics:["docker push","Docker Hub","private registry"],desc:"Push images to a registry and integrate Docker into CI/CD.",whiteboard:"Docker registry and CI/CD docker push Docker Hub private registry pipeline",terminal:"docker"},
+    ]
+  },
+  {
+    id:"k8s", icon:"☸️", name:"Kubernetes", badge:"Advanced", color:"var(--k8s)",
+    desc:"Orchestrate containers at scale",
+    days:[
+      {day:1,title:"What is Kubernetes",topics:["orchestration","cluster","node","control plane"],desc:"Understand why Kubernetes exists and the problems it solves.",whiteboard:"Kubernetes explained what is K8s orchestration cluster nodes control plane",terminal:"kubernetes"},
+      {day:2,title:"Pods — The Building Block",topics:["pod","kubectl run","kubectl get pods","yaml"],desc:"Learn about Pods — the smallest deployable unit in Kubernetes.",whiteboard:"Kubernetes Pods pod concept kubectl run get pods describe YAML spec",terminal:"kubernetes"},
+      {day:3,title:"Deployments & ReplicaSets",topics:["deployment","replicas","rolling update","rollback"],desc:"Deploy applications reliably with Deployments.",whiteboard:"Kubernetes Deployments replicas rolling updates rollback kubectl apply",terminal:"kubernetes"},
+      {day:4,title:"Services & Networking",topics:["ClusterIP","NodePort","LoadBalancer","DNS"],desc:"Expose your applications inside and outside the cluster.",whiteboard:"Kubernetes Services ClusterIP NodePort LoadBalancer DNS endpoints",terminal:"kubernetes"},
+      {day:5,title:"ConfigMaps & Secrets",topics:["ConfigMap","Secret","env vars","volume mount"],desc:"Manage configuration and sensitive data separately from code.",whiteboard:"Kubernetes ConfigMaps and Secrets creating mounting env vars best practices",terminal:"kubernetes"},
+      {day:6,title:"Ingress & Load Balancing",topics:["Ingress","ingress controller","path routing","TLS"],desc:"Route external HTTP traffic to services using Ingress.",whiteboard:"Kubernetes Ingress ingress controller path-based routing TLS termination",terminal:"kubernetes"},
+      {day:7,title:"Persistent Volumes & Storage",topics:["PV","PVC","StorageClass","stateful apps"],desc:"Give stateful applications persistent storage.",whiteboard:"Kubernetes storage PersistentVolume PVC StorageClass stateful applications",terminal:"kubernetes"},
+    ]
+  }
+];
+
+// RAG status per topic (loaded from backend)
+const ragTopics = new Set();
+
+// Load which topics have RAG data
+async function loadRagTopics() {
+  try {
+    const res  = await fetch(`${BACKEND}/rag/topics`);
+    const data = await res.json();
+    (data.topics || []).forEach(t => ragTopics.add(t.toLowerCase()));
+    renderTracks(); // re-render with RAG badges
+  } catch(e) {
+    console.log("[devops] RAG topics unavailable — continuing without badges");
+  }
+}
+
+function hasRag(trackName) {
+  return [...ragTopics].some(t => t.includes(trackName.toLowerCase()) || trackName.toLowerCase().includes(t));
+}
+
+// ── RENDER ─────────────────────────────────────────────────────────────────────
+function renderTracks() {
+  const container = document.getElementById("tracks");
+  container.innerHTML = "";
+
+  COURSE.forEach(track => {
+    const ragActive = hasRag(track.name);
+    const daysHTML = track.days.map(day => {
+      const dayRag = hasRag(track.name);
+      return `
+        <div class="day-card" onclick="openModal('${track.id}', ${day.day})">
+          <div class="day-num">Day ${day.day}</div>
+          <div class="day-title">${day.title}</div>
+          <div class="day-topics">
+            ${day.topics.slice(0,4).map(t=>`<span class="day-topic">${t}</span>`).join("")}
+            ${day.topics.length>4?`<span class="day-topic">+${day.topics.length-4}</span>`:""}
+            ${dayRag?`<span class="day-rag">📚 RAG</span>`:""}
+          </div>
+          <div class="day-action">▶ Start Lesson →</div>
+        </div>`;
+    }).join("");
+
+    container.innerHTML += `
+      <div class="track" data-track="${track.id}" id="track-${track.id}">
+        <div class="track-header" onclick="toggleTrack('${track.id}')">
+          <div class="track-icon">${track.icon}</div>
+          <div class="track-info">
+            <div class="track-name">${track.name}</div>
+            <div class="track-desc">${track.desc}</div>
+          </div>
+          <div class="track-meta">
+            <div class="track-badge">${track.badge}</div>
+            <span>${track.days.length} days</span>
+            ${ragActive?`<span class="track-rag">📚 RAG</span>`:""}
+          </div>
+          <div class="track-chevron">›</div>
+        </div>
+        <div class="days-grid">${daysHTML}</div>
+      </div>`;
+  });
+
+  // Open first track by default
+  const first = document.getElementById("track-linux");
+  if (first) first.classList.add("open");
+}
+
+window.toggleTrack = function(id) {
+  document.getElementById("track-"+id).classList.toggle("open");
+};
+
+// ── MODAL ──────────────────────────────────────────────────────────────────────
+let currentWhiteboardTopic = "";
+let currentTerminalCtx     = "linux";
+
+window.openModal = function(trackId, dayNum) {
+  const track = COURSE.find(t => t.id === trackId);
+  const day   = track?.days.find(d => d.day === dayNum);
+  if (!track || !day) return;
+
+  currentWhiteboardTopic = day.whiteboard;
+  currentTerminalCtx     = day.terminal || trackId;
+
+  const colors = {linux:"var(--linux)",git:"var(--git)",docker:"var(--docker)",k8s:"var(--k8s)"};
+  const color  = colors[trackId];
+  const btn    = document.getElementById("modalStartBtn");
+  btn.style.background = color;
+  btn.style.color = "#080c12";
+
+  const tag = document.getElementById("modalTag");
+  tag.textContent = track.name;
+  tag.style.cssText = `background:${color}18;color:${color};border:1px solid ${color}44`;
+
+  document.getElementById("modalDay").textContent   = `Day ${day.day}`;
+  document.getElementById("modalTitle").textContent = day.title;
+  document.getElementById("modalDesc").textContent  = day.desc;
+  document.getElementById("modalTopics").innerHTML  = day.topics.map(t=>`<span class="modal-topic">${t}</span>`).join("");
+
+  // Show RAG notice if topic has RAG data
+  const ragNotice = document.getElementById("modalRag");
+  ragNotice.className = "modal-rag-notice" + (hasRag(track.name) ? " show" : "");
+
+  document.getElementById("modalOverlay").classList.add("open");
+};
+
+window.closeModal    = e => { if(e.target===document.getElementById("modalOverlay")) closeModalDirect(); };
+window.closeModalDirect = ()=>{ document.getElementById("modalOverlay").classList.remove("open"); };
+
+window.openWhiteboard = function() {
+  closeModalDirect();
+  window.location.href = `whiteboard.html?topic=${encodeURIComponent(currentWhiteboardTopic)}`;
+};
+
+window.openTerminal = function() {
+  closeModalDirect();
+  window.location.href = `terminal.html?ctx=${currentTerminalCtx}`;
+};
+
+document.addEventListener("keydown", e => { if(e.key==="Escape") closeModalDirect(); });
+
+// ── INIT ───────────────────────────────────────────────────────────────────────
+renderTracks();
+loadRagTopics();
+</script>
+</body>
+</html>

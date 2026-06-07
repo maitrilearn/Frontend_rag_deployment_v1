@@ -70,7 +70,7 @@ window.searchNotesService = async function (search) {
     const { data, error } = await supabaseClient
       .from("notes_metadata")
       .select("*")
-      .order("created_at", { ascending: false })
+      .order("id", { ascending: false })
       .limit(20);
 
     if (error) {
@@ -84,7 +84,7 @@ window.searchNotesService = async function (search) {
     .from("notes_metadata")
     .select("*")
     .or(`topic.ilike.%${search}%,subject.ilike.%${search}%`)
-    .order("created_at", { ascending: false });
+    .order("id", { ascending: false });
 
   if (error) {
     console.error("Search failed:", error);
