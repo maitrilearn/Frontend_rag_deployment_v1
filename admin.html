@@ -79,7 +79,7 @@ input::placeholder{color:var(--muted)}
   </div>
 
   <h2>📚 Knowledge Base Manager</h2>
-  <p class="sub">Upload notes to Supabase bucket, then ingest them here to build the RAG knowledge base. The AI teacher will use your notes when teaching.</p>
+  <p class="sub">Upload notes for ANY subject — DevOps, Science, Math, History, Programming. The AI teacher will use your notes when teaching any topic on the whiteboard.</p>
 
   <!-- INGEST FORM -->
   <div class="card">
@@ -91,16 +91,39 @@ input::placeholder{color:var(--muted)}
       </div>
       <div class="form-group">
         <label>Topic</label>
-        <select id="topic">
-          <option value="">— Select topic —</option>
-          <option value="Linux">🐧 Linux (RHCSA)</option>
-          <option value="Git">🌿 Git</option>
-          <option value="Docker">🐳 Docker</option>
-          <option value="Kubernetes">☸️ Kubernetes</option>
-          <option value="CI/CD">🔄 CI/CD</option>
-          <option value="AWS">☁️ AWS</option>
-          <option value="Terraform">🏗️ Terraform</option>
-        </select>
+        <input id="topic" placeholder="e.g. Docker, Photosynthesis, Newton Laws, Python..."
+          list="topicSuggestions" autocomplete="off">
+        <datalist id="topicSuggestions">
+          <!-- DevOps -->
+          <option value="Linux">
+          <option value="Git">
+          <option value="Docker">
+          <option value="Kubernetes">
+          <option value="CI/CD">
+          <option value="AWS">
+          <option value="Terraform">
+          <!-- Science -->
+          <option value="Photosynthesis">
+          <option value="Cell Biology">
+          <option value="Newton Laws">
+          <option value="Thermodynamics">
+          <option value="Periodic Table">
+          <option value="DNA Replication">
+          <!-- Math -->
+          <option value="Calculus">
+          <option value="Linear Algebra">
+          <option value="Statistics">
+          <option value="Trigonometry">
+          <!-- CS -->
+          <option value="Python">
+          <option value="Data Structures">
+          <option value="Machine Learning">
+          <option value="SQL">
+          <!-- History -->
+          <option value="World War 2">
+          <option value="Indian Independence">
+          <option value="French Revolution">
+        </datalist>
       </div>
     </div>
     <div class="form-row">

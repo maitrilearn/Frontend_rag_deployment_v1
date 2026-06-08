@@ -237,9 +237,9 @@ html,body{height:100%;overflow:hidden;font-family:'DM Sans',sans-serif;backgroun
         <div class="avatar-ring" id="avatarRing">🧑‍🏫</div>
         <div class="tutor-name">DR. MAITHRI</div>
       </div>
-      <div class="speech-bubble"><span id="speechText">Hello! Enter a topic and I'll teach you! 👋</span></div>
+      <div class="speech-bubble"><span id="speechText">Hello! I can teach any subject — enter a topic! 👋</span></div>
       <div class="controls">
-        <input id="topicInput" class="topic-input" placeholder="e.g. Docker, Kubernetes, CI/CD...">
+        <input id="topicInput" class="topic-input" placeholder="e.g. Photosynthesis, Docker, Newton's Laws, Git...">
         <button id="startBtn" class="btn btn-primary" onclick="startLesson()">▶ Start Lesson</button>
         <button id="pauseBtn" class="btn btn-secondary" onclick="togglePause()" disabled>⏸ Pause</button>
         <button class="btn btn-danger" onclick="clearLesson()">✕ Clear Board</button>
@@ -265,7 +265,7 @@ html,body{height:100%;overflow:hidden;font-family:'DM Sans',sans-serif;backgroun
       <div id="boardScroll"><div id="boardContent"></div></div>
       <div class="idle-overlay" id="idleOverlay">
         <div class="idle-icon">🖊️</div>
-        <div class="idle-text">Enter a topic and press Start Lesson<br>to begin the AI-powered lesson</div>
+        <div class="idle-text">Enter any topic — Science, Math, History, DevOps...<br>AI teaches using your uploaded notes + RAG</div>
       </div>
     </main>
   </div>
@@ -708,7 +708,7 @@ window.startLesson=async function(){
     // Show RAG badge if used
     if(data.rag_used&&data.chunks>0){
       const badge=document.createElement("div");
-      badge.className="rag-badge";badge.textContent=`📚 RAG — ${data.chunks} chunks`;
+      badge.className="rag-badge";badge.textContent=`📚 RAG Active — ${data.chunks} chunks from your notes`;
       document.body.appendChild(badge);setTimeout(()=>badge.remove(),4000);
     }
     runStep(0);
@@ -728,7 +728,7 @@ window.clearLesson=function(){
   clearAllTimers();clearBoard();lesson=null;running=false;paused=false;
   $("startBtn").disabled=false;$("pauseBtn").disabled=true;$("pauseBtn").textContent="⏸ Pause";
   $("stepList").innerHTML="";setStatus("READY","");
-  setSpeech("Hello! Enter a topic and I'll teach you! 👋");
+  setSpeech("Hello! I can teach any subject — enter a topic! 👋");
   document.querySelectorAll(".rag-badge").forEach(e=>e.remove());
 };
 
