@@ -6,4 +6,4 @@ const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 const BACKEND_URL = "https://maitrilearn-backend-rag.onrender.com";
 
 // BUG FIX: Voice tutor runs on port 5001 (separate server) — was conflicting with port 5000
-const VOICE_TUTOR_URL = "http://localhost:5001";
+const VOICE_TUTOR_URL = "https://ounce-vicinity-deserve.ngrok-free.dev";
