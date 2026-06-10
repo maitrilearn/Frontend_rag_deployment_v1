@@ -12,9 +12,13 @@ window.generateVoiceTutor = async function () {
   answerEl.innerText = "";
 
   try {
+    // Step 1: Get AI answer + audio URL
     const res = await fetch(`${VOICE_TUTOR_URL}/generate`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
+      method:  "POST",
+      headers: {
+        "Content-Type":               "application/json",
+        "ngrok-skip-browser-warning": "true"
+      },
       body: JSON.stringify({ prompt })
     });
 
@@ -23,14 +27,28 @@ window.generateVoiceTutor = async function () {
     if (data.error) throw new Error(data.error);
 
     answerEl.innerText = data.text;
-    player.src = `${VOICE_TUTOR_URL}${data.audio}`;
-    player.play();
+    status.innerText   = "Playing... 🔊";
+
+    // Step 2: Fetch audio as blob
+    // This bypasses ngrok browser warning page on mobile
+    const audioUrl = data.audio_url || `${VOICE_TUTOR_URL}${data.audio}`;
+    const audioRes = await fetch(audioUrl, {
+      headers: { "ngrok-skip-browser-warning": "true" }
+    });
+
+    if (!audioRes.ok) throw new Error("Audio fetch failed: " + audioRes.status);
+
+    const audioBlob = await audioRes.blob();
+    const blobUrl   = URL.createObjectURL(audioBlob);
+
+    player.src = blobUrl;
+    player.onended = () => URL.revokeObjectURL(blobUrl);
+    await player.play();
+
     status.innerText = "Done ✅";
 
   } catch (error) {
     status.innerText = "";
-
-    // Bug Fix 7: Student-friendly error messages
     const msg = error.message;
     if (msg.includes("Failed to fetch") || msg.includes("ERR_CONNECTION_REFUSED")) {
       errorEl.innerText = "🎤 Voice Tutor is not available right now. Try the AI Tutor above instead.";
