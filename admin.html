@@ -4,185 +4,479 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>MaitriLearn — RAG Admin</title>
-<link rel="icon" href="data:,">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚙️</text></svg>">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --bg:#080c12;--surface:#0d1421;--border:#1e2d45;
-  --text:#e2eaf6;--muted:#5a7a9e;
-  --accent:#38bdf8;--green:#3fb950;--red:#f87171;--yellow:#fbbf24;
+  --white:#ffffff;
+  --gray-50:#f8fafc;--gray-100:#f1f5f9;--gray-200:#e2e8f0;
+  --gray-300:#cbd5e1;--gray-400:#94a3b8;--gray-500:#64748b;
+  --gray-600:#475569;--gray-700:#334155;--gray-800:#1e293b;--gray-900:#0f172a;
+  --indigo:#4f46e5;--indigo-600:#4338ca;--indigo-50:#eef2ff;--indigo-100:#e0e7ff;
+  --violet:#7c3aed;--violet-50:#f5f3ff;
+  --emerald:#059669;--emerald-50:#ecfdf5;--emerald-100:#d1fae5;
+  --amber:#d97706;--amber-50:#fffbeb;--amber-100:#fef3c7;
+  --rose:#e11d48;--rose-50:#fff1f2;--rose-100:#ffe4e6;
+  --cyan:#0891b2;--cyan-50:#ecfeff;
+  --r:12px;--r-sm:8px;--r-lg:18px;
+  --sh-sm:0 1px 2px rgba(0,0,0,.05);
+  --sh:0 1px 3px rgba(0,0,0,.1),0 1px 2px rgba(0,0,0,.06);
+  --sh-md:0 4px 6px -1px rgba(0,0,0,.1),0 2px 4px -1px rgba(0,0,0,.06);
+  --sh-lg:0 10px 15px -3px rgba(0,0,0,.1),0 4px 6px -2px rgba(0,0,0,.05);
 }
-body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding:32px 20px}
-.wrap{max-width:760px;margin:0 auto}
-.topbar{display:flex;align-items:center;gap:12px;margin-bottom:40px}
-.brand{font-weight:800;font-size:18px;color:var(--accent)}
-.page-title{color:var(--muted);font-size:13px}
-.back{margin-left:auto;color:var(--muted);text-decoration:none;font-size:12px;border:1px solid var(--border);padding:6px 14px;border-radius:6px}
-.back:hover{color:var(--text)}
+html{scroll-behavior:smooth}
+body{
+  font-family:'Inter',sans-serif;
+  background:var(--gray-50);
+  color:var(--gray-900);
+  min-height:100vh;
+}
 
-h2{font-size:20px;font-weight:700;margin-bottom:6px}
-.sub{font-size:13px;color:var(--muted);margin-bottom:24px;line-height:1.6}
+/* ── NAVBAR ── */
+.nav{
+  position:sticky;top:0;z-index:100;
+  height:62px;display:flex;align-items:center;
+  padding:0 32px;gap:16px;
+  background:rgba(255,255,255,.92);
+  backdrop-filter:blur(16px);
+  border-bottom:1px solid var(--gray-200);
+  box-shadow:var(--sh-sm);
+}
+.nav-logo{display:flex;align-items:center;gap:10px;text-decoration:none}
+.nav-logo-mark{
+  width:36px;height:36px;border-radius:10px;
+  background:linear-gradient(135deg,var(--indigo),var(--violet));
+  display:flex;align-items:center;justify-content:center;font-size:18px;
+  box-shadow:0 3px 10px rgba(79,70,229,.3);
+}
+.nav-logo-name{
+  font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;font-size:17px;
+  background:linear-gradient(135deg,var(--indigo),var(--violet));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+}
+.nav-sep{color:var(--gray-300);font-size:18px}
+.nav-page{font-size:13px;color:var(--gray-500);font-weight:500}
+.nav-space{flex:1}
+.nav-back{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:7px 16px;border-radius:var(--r-sm);
+  border:1.5px solid var(--gray-200);background:white;
+  font-size:13px;font-weight:600;color:var(--gray-600);
+  text-decoration:none;transition:all .2s;
+}
+.nav-back:hover{border-color:var(--indigo);color:var(--indigo);background:var(--indigo-50)}
 
-.card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:28px;margin-bottom:24px}
-.card-title{font-size:14px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--accent);margin-bottom:20px;display:flex;align-items:center;gap:8px}
+/* ── LAYOUT ── */
+.page{max-width:900px;margin:0 auto;padding:40px 32px 80px}
 
+/* ── PAGE HEADER ── */
+.page-header{margin-bottom:36px}
+.ph-tag{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:4px 12px;border-radius:20px;
+  background:var(--indigo-50);color:var(--indigo);
+  font-size:12px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;
+  border:1px solid var(--indigo-100);margin-bottom:12px;
+}
+.ph-title{
+  font-family:'Plus Jakarta Sans',sans-serif;
+  font-weight:800;font-size:28px;color:var(--gray-900);
+  letter-spacing:-.5px;margin-bottom:8px;
+}
+.ph-sub{font-size:15px;color:var(--gray-500);line-height:1.65;max-width:580px}
+
+/* ── STATUS PILLS ── */
+.status-bar{
+  display:flex;gap:12px;margin-bottom:32px;
+  flex-wrap:wrap;
+}
+.status-pill{
+  display:inline-flex;align-items:center;gap:8px;
+  padding:10px 16px;border-radius:var(--r);
+  background:white;border:1.5px solid var(--gray-200);
+  font-size:13px;font-weight:600;color:var(--gray-700);
+  box-shadow:var(--sh-sm);
+}
+.status-pill .sp-dot{width:8px;height:8px;border-radius:50%}
+.status-pill .sp-val{
+  font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700;
+}
+
+/* ── SECTION CARDS ── */
+.sec-card{
+  background:white;border:1.5px solid var(--gray-200);
+  border-radius:var(--r-lg);margin-bottom:20px;
+  box-shadow:var(--sh-sm);overflow:hidden;
+  transition:box-shadow .2s;
+}
+.sec-card:hover{box-shadow:var(--sh-md)}
+.sec-card-header{
+  display:flex;align-items:center;gap:14px;
+  padding:20px 24px;border-bottom:1px solid var(--gray-100);
+}
+.sec-icon{
+  width:42px;height:42px;border-radius:12px;
+  display:flex;align-items:center;justify-content:center;font-size:20px;
+  flex-shrink:0;
+}
+.sec-title{
+  font-family:'Plus Jakarta Sans',sans-serif;
+  font-weight:700;font-size:16px;color:var(--gray-900);
+  margin-bottom:2px;
+}
+.sec-desc{font-size:13px;color:var(--gray-400)}
+.sec-body{padding:24px}
+
+/* ── FORM ELEMENTS ── */
 .form-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
 .form-group{display:flex;flex-direction:column;gap:6px}
-label{font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted)}
-input,select{
-  padding:10px 14px;border-radius:8px;
-  border:1px solid var(--border);background:var(--bg);
-  color:var(--text);font-family:inherit;font-size:14px;outline:none;
-  transition:border-color .2s;
+.flabel{
+  font-size:11px;font-weight:700;letter-spacing:1px;
+  text-transform:uppercase;color:var(--gray-500);
 }
-input:focus,select:focus{border-color:var(--accent)}
-input::placeholder{color:var(--muted)}
+.finput{
+  padding:11px 14px;border-radius:var(--r-sm);
+  border:1.5px solid var(--gray-200);background:var(--gray-50);
+  color:var(--gray-900);font-family:'Inter',sans-serif;font-size:14px;
+  outline:none;transition:all .2s;
+}
+.finput:focus{border-color:var(--indigo);background:white;box-shadow:0 0 0 3px rgba(79,70,229,.1)}
+.finput::placeholder{color:var(--gray-400)}
+.finput-mono{font-family:'JetBrains Mono',monospace;font-size:13px}
 
+/* ── BUTTONS ── */
 .btn{
-  padding:11px 24px;border-radius:8px;border:none;
-  font-family:inherit;font-size:13px;font-weight:700;
-  cursor:pointer;transition:all .2s;letter-spacing:.5px;
+  display:inline-flex;align-items:center;gap:7px;
+  padding:10px 20px;border-radius:var(--r-sm);border:none;
+  font-family:'Inter',sans-serif;font-size:13px;font-weight:600;
+  cursor:pointer;transition:all .2s;
 }
-.btn-primary{background:var(--accent);color:#080c12}
-.btn-primary:hover:not(:disabled){opacity:.85}
-.btn-primary:disabled{opacity:.35;cursor:not-allowed}
-.btn-danger{background:transparent;color:var(--red);border:1px solid rgba(248,113,113,.3)}
-.btn-danger:hover:not(:disabled){background:rgba(248,113,113,.08)}
-.btn-danger:disabled{opacity:.35;cursor:not-allowed}
-
-.log{
-  background:var(--bg);border:1px solid var(--border);border-radius:8px;
-  padding:14px;font-family:'JetBrains Mono',monospace;font-size:12px;
-  line-height:1.7;min-height:80px;max-height:220px;overflow-y:auto;
-  color:var(--green);white-space:pre-wrap;
+.btn-primary{
+  background:linear-gradient(135deg,var(--indigo),var(--violet));
+  color:white;box-shadow:0 2px 8px rgba(79,70,229,.3);
 }
-.log .err{color:var(--red)}
-.log .info{color:var(--accent)}
-.log .warn{color:var(--yellow)}
+.btn-primary:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 4px 14px rgba(79,70,229,.4)}
+.btn-primary:disabled{opacity:.45;cursor:not-allowed;transform:none}
+.btn-danger{background:white;color:var(--rose);border:1.5px solid var(--rose-100)}
+.btn-danger:hover:not(:disabled){background:var(--rose-50);border-color:var(--rose)}
+.btn-danger:disabled{opacity:.4;cursor:not-allowed}
+.btn-outline{background:white;color:var(--gray-600);border:1.5px solid var(--gray-200)}
+.btn-outline:hover{border-color:var(--indigo);color:var(--indigo);background:var(--indigo-50)}
+.btn-sm{padding:6px 14px;font-size:12px}
 
-/* Topics table */
-.topics-table{width:100%;border-collapse:collapse;font-size:13px}
-.topics-table th{text-align:left;padding:8px 12px;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border)}
-.topics-table td{padding:10px 12px;border-bottom:1px solid rgba(30,45,69,.5);color:var(--text)}
+/* ── LOG TERMINAL ── */
+.log-wrap{
+  background:var(--gray-900);border-radius:var(--r);
+  overflow:hidden;margin-top:16px;
+}
+.log-titlebar{
+  display:flex;align-items:center;gap:8px;
+  padding:10px 14px;background:var(--gray-800);
+  border-bottom:1px solid rgba(255,255,255,.06);
+}
+.log-dot{width:10px;height:10px;border-radius:50%}
+.log-name{font-size:11px;color:rgba(255,255,255,.4);font-family:'JetBrains Mono',monospace;margin-left:4px}
+.log-body{
+  padding:14px 16px;
+  font-family:'JetBrains Mono',monospace;font-size:12px;
+  line-height:1.8;min-height:80px;max-height:220px;
+  overflow-y:auto;color:#86efac;
+  white-space:pre-wrap;word-break:break-all;
+}
+.log-body .err{color:#fca5a5}
+.log-body .info{color:#93c5fd}
+.log-body .warn{color:#fcd34d}
+
+/* ── TOPICS TABLE ── */
+.topics-wrap{margin-top:4px}
+.topics-table{width:100%;border-collapse:collapse}
+.topics-table th{
+  text-align:left;padding:10px 14px;
+  font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;
+  color:var(--gray-400);border-bottom:1.5px solid var(--gray-200);
+  background:var(--gray-50);
+}
+.topics-table th:first-child{border-radius:var(--r-sm) 0 0 0}
+.topics-table th:last-child{border-radius:0 var(--r-sm) 0 0}
+.topics-table td{
+  padding:12px 14px;border-bottom:1px solid var(--gray-100);
+  font-size:14px;color:var(--gray-700);
+  transition:background .15s;
+}
+.topics-table tr:hover td{background:var(--gray-50)}
 .topics-table tr:last-child td{border-bottom:none}
-.topic-pill{display:inline-block;padding:2px 10px;border-radius:20px;font-size:11px;background:rgba(56,189,248,.1);color:var(--accent);border:1px solid rgba(56,189,248,.2)}
-.empty-msg{text-align:center;color:var(--muted);padding:24px;font-size:13px}
+.topic-badge{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:4px 12px;border-radius:20px;
+  background:var(--indigo-50);color:var(--indigo);
+  font-size:12px;font-weight:600;border:1px solid var(--indigo-100);
+}
+.status-ok{
+  display:inline-flex;align-items:center;gap:5px;
+  font-size:12px;font-weight:600;color:var(--emerald);
+}
+.status-dot-ok{width:6px;height:6px;border-radius:50%;background:var(--emerald)}
+.chunks-count{
+  font-family:'JetBrains Mono',monospace;font-size:12px;
+  font-weight:600;color:var(--gray-500);
+}
+.empty-state{
+  text-align:center;padding:40px 20px;
+  display:flex;flex-direction:column;align-items:center;gap:12px;
+}
+.empty-icon{font-size:40px;opacity:.3}
+.empty-text{font-size:14px;color:var(--gray-400);line-height:1.6}
+
+/* ── KB SUMMARY ── */
+.kb-summary{
+  display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap;
+}
+.kb-stat{
+  flex:1;min-width:120px;padding:14px 16px;border-radius:var(--r);
+  border:1.5px solid var(--gray-200);background:white;
+  text-align:center;
+}
+.kb-stat-num{
+  font-family:'Plus Jakarta Sans',sans-serif;
+  font-weight:800;font-size:26px;line-height:1;margin-bottom:4px;
+}
+.kb-stat-label{font-size:12px;color:var(--gray-400);font-weight:500}
+
+/* ── SEARCH RESULTS ── */
+.chunk-result{
+  padding:14px;border-radius:var(--r-sm);
+  background:var(--gray-50);border:1px solid var(--gray-200);
+  margin-bottom:10px;
+}
+.chunk-header{
+  display:flex;align-items:center;gap:8px;
+  margin-bottom:8px;
+}
+.chunk-num{
+  width:22px;height:22px;border-radius:6px;
+  background:var(--indigo-50);color:var(--indigo);
+  display:flex;align-items:center;justify-content:center;
+  font-size:11px;font-weight:700;flex-shrink:0;
+}
+.chunk-label{font-size:12px;font-weight:600;color:var(--gray-500)}
+.chunk-text{
+  font-size:13px;color:var(--gray-700);line-height:1.7;
+  font-family:'Inter',sans-serif;
+}
+
+/* ── ALERT ── */
+.alert{
+  display:flex;align-items:flex-start;gap:10px;
+  padding:12px 16px;border-radius:var(--r-sm);
+  font-size:13px;line-height:1.5;margin-bottom:14px;
+}
+.alert-warn{background:var(--amber-50);border:1px solid var(--amber-100);color:var(--amber)}
+.alert-info{background:var(--indigo-50);border:1px solid var(--indigo-100);color:var(--indigo)}
+
+/* ── RESPONSIVE ── */
+@media(max-width:600px){
+  .nav{padding:0 16px}
+  .page{padding:24px 16px 60px}
+  .form-row{grid-template-columns:1fr}
+  .kb-summary{flex-direction:column}
+  .status-bar{flex-direction:column}
+}
+::-webkit-scrollbar{width:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--gray-300);border-radius:3px}
+
+/* Animations */
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+.sec-card{animation:fadeUp .4s ease both}
+.sec-card:nth-child(1){animation-delay:.05s}
+.sec-card:nth-child(2){animation-delay:.1s}
+.sec-card:nth-child(3){animation-delay:.15s}
+.sec-card:nth-child(4){animation-delay:.2s}
 </style>
 </head>
 <body>
-<div class="wrap">
 
-  <div class="topbar">
-    <span class="brand">MaitriLearn</span>
-    <span class="page-title">/ RAG Admin</span>
-    <a href="index.html" class="back">← Dashboard</a>
+<!-- NAVBAR -->
+<nav class="nav">
+  <a href="index.html" class="nav-logo">
+    <div class="nav-logo-mark">🎓</div>
+    <span class="nav-logo-name">MaitriLearn</span>
+  </a>
+  <span class="nav-sep">/</span>
+  <span class="nav-page">RAG Knowledge Base</span>
+  <div class="nav-space"></div>
+  <a href="index.html" class="nav-back">← Dashboard</a>
+</nav>
+
+<div class="page">
+
+  <!-- PAGE HEADER -->
+  <div class="page-header">
+    <div class="ph-tag">⚙️ Admin Panel</div>
+    <h1 class="ph-title">Knowledge Base Manager</h1>
+    <p class="ph-sub">Upload notes for any subject — DevOps, Science, Math, History, Programming. The AI teacher uses your notes when teaching on the whiteboard.</p>
   </div>
 
-  <h2>📚 Knowledge Base Manager</h2>
-  <p class="sub">Upload notes for ANY subject — DevOps, Science, Math, History, Programming. The AI teacher will use your notes when teaching any topic on the whiteboard.</p>
-
-  <!-- INGEST FORM -->
-  <div class="card">
-    <div class="card-title">⬆️ Ingest Document</div>
-    <div class="form-row">
-      <div class="form-group">
-        <label>Filename in Supabase bucket</label>
-        <input id="filename" placeholder="e.g. docker-notes.pdf">
-      </div>
-      <div class="form-group">
-        <label>Topic</label>
-        <input id="topic" placeholder="e.g. Docker, Photosynthesis, Newton Laws, Python..."
-          list="topicSuggestions" autocomplete="off">
-        <datalist id="topicSuggestions">
-          <!-- DevOps -->
-          <option value="Linux">
-          <option value="Git">
-          <option value="Docker">
-          <option value="Kubernetes">
-          <option value="CI/CD">
-          <option value="AWS">
-          <option value="Terraform">
-          <!-- Science -->
-          <option value="Photosynthesis">
-          <option value="Cell Biology">
-          <option value="Newton Laws">
-          <option value="Thermodynamics">
-          <option value="Periodic Table">
-          <option value="DNA Replication">
-          <!-- Math -->
-          <option value="Calculus">
-          <option value="Linear Algebra">
-          <option value="Statistics">
-          <option value="Trigonometry">
-          <!-- CS -->
-          <option value="Python">
-          <option value="Data Structures">
-          <option value="Machine Learning">
-          <option value="SQL">
-          <!-- History -->
-          <option value="World War 2">
-          <option value="Indian Independence">
-          <option value="French Revolution">
-        </datalist>
-      </div>
+  <!-- STATUS BAR -->
+  <div class="status-bar" id="statusBar">
+    <div class="status-pill">
+      <div class="sp-dot" style="background:var(--emerald)"></div>
+      <span style="color:var(--gray-500)">Topics</span>
+      <span class="sp-val" style="color:var(--indigo)" id="statTopics">—</span>
     </div>
-    <div class="form-row">
-      <div class="form-group">
-        <label>Bucket name</label>
-        <input id="bucket" value="notes" placeholder="notes">
-      </div>
-      <div class="form-group" style="justify-content:flex-end">
-        <label>&nbsp;</label>
-        <button class="btn btn-primary" id="ingestBtn" onclick="ingestDoc()">⬆ Ingest Document</button>
-      </div>
+    <div class="status-pill">
+      <div class="sp-dot" style="background:var(--indigo)"></div>
+      <span style="color:var(--gray-500)">Total Chunks</span>
+      <span class="sp-val" style="color:var(--indigo)" id="statChunks">—</span>
     </div>
-    <div class="log" id="ingestLog">Ready. Enter a filename and topic to begin.</div>
+    <div class="status-pill">
+      <div class="sp-dot" style="background:var(--amber);animation:pulse 2s infinite"></div>
+      <span style="color:var(--gray-500)">Status</span>
+      <span class="sp-val" style="color:var(--emerald)" id="statStatus">Loading...</span>
+    </div>
+    <button class="btn btn-outline btn-sm" onclick="loadTopics()" style="border-radius:20px">↻ Refresh</button>
   </div>
 
-  <!-- KNOWLEDGE BASE STATUS -->
-  <div class="card">
-    <div class="card-title" style="justify-content:space-between">
-      <span>📊 Knowledge Base Status</span>
-      <button class="btn btn-primary" style="padding:6px 14px;font-size:11px" onclick="loadTopics()">↻ Refresh</button>
+  <!-- 1. INGEST -->
+  <div class="sec-card">
+    <div class="sec-card-header">
+      <div class="sec-icon" style="background:var(--indigo-50)">⬆️</div>
+      <div>
+        <div class="sec-title">Ingest Document</div>
+        <div class="sec-desc">Add a file from Supabase Storage to the knowledge base</div>
+      </div>
     </div>
-    <div id="topicsWrap">
-      <div class="empty-msg">Click Refresh to load knowledge base status</div>
+    <div class="sec-body">
+      <div class="alert alert-info">
+        ℹ️ First upload your file to Supabase Storage (notes bucket), then enter the filename below.
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="flabel">Filename in bucket</label>
+          <input class="finput finput-mono" id="filename" placeholder="e.g. 1234567890_docker-notes.pdf">
+        </div>
+        <div class="form-group">
+          <label class="flabel">Topic</label>
+          <input class="finput" id="topic"
+            placeholder="e.g. Docker, Photosynthesis, Calculus..."
+            list="topicSuggestions" autocomplete="off">
+          <datalist id="topicSuggestions">
+            <option value="Linux"><option value="Git"><option value="Docker">
+            <option value="Kubernetes"><option value="CI/CD"><option value="AWS">
+            <option value="Terraform"><option value="Photosynthesis">
+            <option value="Cell Biology"><option value="Newton Laws">
+            <option value="Thermodynamics"><option value="Periodic Table">
+            <option value="DNA Replication"><option value="Calculus">
+            <option value="Linear Algebra"><option value="Statistics">
+            <option value="Trigonometry"><option value="Python">
+            <option value="Data Structures"><option value="Machine Learning">
+            <option value="SQL"><option value="World War 2">
+            <option value="Indian Independence"><option value="French Revolution">
+          </datalist>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="flabel">Bucket Name</label>
+          <input class="finput" id="bucket" value="notes">
+        </div>
+        <div class="form-group" style="justify-content:flex-end">
+          <label class="flabel">&nbsp;</label>
+          <button class="btn btn-primary" id="ingestBtn" onclick="ingestDoc()">
+            ⬆ Ingest Document
+          </button>
+        </div>
+      </div>
+      <div class="log-wrap">
+        <div class="log-titlebar">
+          <div class="log-dot" style="background:#ff5f57"></div>
+          <div class="log-dot" style="background:#febc2e"></div>
+          <div class="log-dot" style="background:#28c840"></div>
+          <span class="log-name">ingestion log</span>
+        </div>
+        <div class="log-body" id="ingestLog">Ready. Enter a filename and topic to begin.</div>
+      </div>
     </div>
   </div>
 
-  <!-- DELETE TOPIC -->
-  <div class="card">
-    <div class="card-title">🗑️ Delete Topic</div>
-    <p style="font-size:13px;color:var(--muted);margin-bottom:16px">Remove all chunks for a topic from the knowledge base. This cannot be undone.</p>
-    <div class="form-row">
-      <div class="form-group">
-        <label>Topic to delete</label>
-        <input id="deleteTopic" placeholder="e.g. Docker">
-      </div>
-      <div class="form-group" style="justify-content:flex-end">
-        <label>&nbsp;</label>
-        <button class="btn btn-danger" onclick="deleteTopic()">🗑 Delete Topic</button>
+  <!-- 2. KNOWLEDGE BASE STATUS -->
+  <div class="sec-card">
+    <div class="sec-card-header">
+      <div class="sec-icon" style="background:var(--emerald-50)">📊</div>
+      <div>
+        <div class="sec-title">Knowledge Base Status</div>
+        <div class="sec-desc">All topics currently ingested and available for RAG teaching</div>
       </div>
     </div>
-    <div class="log" id="deleteLog" style="min-height:40px">—</div>
+    <div class="sec-body">
+      <div id="topicsWrap">
+        <div class="empty-state">
+          <div class="empty-icon">📭</div>
+          <div class="empty-text">Loading knowledge base...</div>
+        </div>
+      </div>
+    </div>
   </div>
 
-  <!-- TEST SEARCH -->
-  <div class="card">
-    <div class="card-title">🔍 Test RAG Search</div>
-    <p style="font-size:13px;color:var(--muted);margin-bottom:16px">Test what chunks get retrieved for a query — use this to verify ingestion worked.</p>
-    <div class="form-row">
-      <div class="form-group">
-        <label>Search query</label>
-        <input id="searchQuery" placeholder="e.g. how does docker container work">
-      </div>
-      <div class="form-group">
-        <label>Filter by topic (optional)</label>
-        <input id="searchTopic" placeholder="e.g. Docker">
+  <!-- 3. DELETE -->
+  <div class="sec-card">
+    <div class="sec-card-header">
+      <div class="sec-icon" style="background:var(--rose-50)">🗑️</div>
+      <div>
+        <div class="sec-title">Delete Topic</div>
+        <div class="sec-desc">Remove all chunks for a topic — cannot be undone</div>
       </div>
     </div>
-    <button class="btn btn-primary" style="margin-bottom:14px" onclick="testSearch()">🔍 Search</button>
-    <div class="log" id="searchLog">Enter a query and click Search.</div>
+    <div class="sec-body">
+      <div class="alert alert-warn">
+        ⚠️ Deleting a topic removes all its chunks permanently. You'll need to re-ingest to restore it.
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="flabel">Topic to Delete</label>
+          <input class="finput" id="deleteTopic" placeholder="e.g. Docker">
+        </div>
+        <div class="form-group" style="justify-content:flex-end">
+          <label class="flabel">&nbsp;</label>
+          <button class="btn btn-danger" onclick="deleteTopic()">🗑 Delete Topic</button>
+        </div>
+      </div>
+      <div class="log-wrap">
+        <div class="log-titlebar">
+          <div class="log-dot" style="background:#ff5f57"></div>
+          <div class="log-dot" style="background:#febc2e"></div>
+          <div class="log-dot" style="background:#28c840"></div>
+          <span class="log-name">delete log</span>
+        </div>
+        <div class="log-body" id="deleteLog" style="min-height:50px">—</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. TEST SEARCH -->
+  <div class="sec-card">
+    <div class="sec-card-header">
+      <div class="sec-icon" style="background:var(--violet-50)">🔍</div>
+      <div>
+        <div class="sec-title">Test RAG Search</div>
+        <div class="sec-desc">Verify ingestion worked — see exactly what chunks the AI retrieves</div>
+      </div>
+    </div>
+    <div class="sec-body">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="flabel">Search Query</label>
+          <input class="finput" id="searchQuery" placeholder="e.g. how does docker container work">
+        </div>
+        <div class="form-group">
+          <label class="flabel">Filter by Topic (optional)</label>
+          <input class="finput" id="searchTopic" placeholder="e.g. Docker">
+        </div>
+      </div>
+      <button class="btn btn-primary" onclick="testSearch()">🔍 Search Knowledge Base</button>
+      <div id="searchResults" style="margin-top:16px"></div>
+    </div>
   </div>
 
 </div>
@@ -193,11 +487,10 @@ const BACKEND = typeof BACKEND_URL !== "undefined" ? BACKEND_URL : "http://local
 
 function log(elId, msg, type="") {
   const el = document.getElementById(elId);
-  const cls = type ? `<span class="${type}">${msg}</span>` : msg;
-  el.innerHTML += "\n" + cls;
+  const line = type ? `<span class="${type}">${msg}</span>` : msg;
+  el.innerHTML += "\n" + line;
   el.scrollTop = el.scrollHeight;
 }
-
 function clearLog(elId, msg="") {
   document.getElementById(elId).innerHTML = msg;
 }
@@ -209,14 +502,13 @@ window.ingestDoc = async function() {
   const bucket   = document.getElementById("bucket").value.trim() || "notes";
   const btn      = document.getElementById("ingestBtn");
 
-  if (!filename || !topic) {
-    alert("Please fill in filename and topic"); return;
-  }
+  if (!filename || !topic) { alert("Please fill in filename and topic"); return; }
 
   btn.disabled = true;
+  btn.textContent = "⏳ Ingesting...";
   clearLog("ingestLog", `Starting ingestion of "${filename}"...`);
   log("ingestLog", `Topic: ${topic} | Bucket: ${bucket}`, "info");
-  log("ingestLog", "Downloading file from Supabase...");
+  log("ingestLog", "Downloading file from Supabase Storage...");
 
   try {
     const res  = await fetch(`${BACKEND}/rag/ingest`, {
@@ -225,60 +517,93 @@ window.ingestDoc = async function() {
       body: JSON.stringify({ filename, topic, bucket })
     });
     const data = await res.json();
-
     if (data.error) {
-      log("ingestLog", `ERROR: ${data.error}`, "err");
+      log("ingestLog", `✗ ERROR: ${data.error}`, "err");
     } else {
-      log("ingestLog", `✅ ${data.message}`, "info");
-      log("ingestLog", `   Chunks stored: ${data.chunks_stored} / ${data.total_chunks}`);
-      log("ingestLog", `   Ready for RAG search on topic: "${topic}"`);
+      log("ingestLog", `✓ ${data.message}`, "info");
+      log("ingestLog", `  Chunks stored: ${data.chunks_stored} / ${data.total_chunks}`);
+      log("ingestLog", `  Topic "${topic}" is now available for RAG teaching ✓`);
       loadTopics();
     }
   } catch(e) {
-    log("ingestLog", `ERROR: ${e.message} — is backend running?`, "err");
+    log("ingestLog", `✗ ERROR: ${e.message} — is backend running?`, "err");
   }
   btn.disabled = false;
+  btn.innerHTML = "⬆ Ingest Document";
 };
 
 // ── LOAD TOPICS ───────────────────────────────────────────────────────────────
 window.loadTopics = async function() {
   const wrap = document.getElementById("topicsWrap");
-  wrap.innerHTML = '<div class="empty-msg">Loading...</div>';
+  wrap.innerHTML = `<div class="empty-state"><div class="empty-icon">⏳</div><div class="empty-text">Loading...</div></div>`;
 
   try {
     const res  = await fetch(`${BACKEND}/rag/topics`);
     const data = await res.json();
 
+    // Update status bar
+    document.getElementById("statTopics").textContent = data.topics?.length || 0;
+    document.getElementById("statChunks").textContent = data.total_chunks || 0;
+    document.getElementById("statStatus").textContent = "Connected ✓";
+    document.getElementById("statStatus").style.color = "var(--emerald)";
+
     if (!data.topics || data.topics.length === 0) {
-      wrap.innerHTML = '<div class="empty-msg">No documents ingested yet. Upload notes to Supabase bucket and ingest them above.</div>';
+      wrap.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-icon">📭</div>
+          <div class="empty-text">No documents ingested yet.<br>Upload notes to Supabase bucket and ingest them above.</div>
+        </div>`;
       return;
     }
 
     wrap.innerHTML = `
+      <div class="kb-summary">
+        <div class="kb-stat">
+          <div class="kb-stat-num" style="color:var(--indigo)">${data.topics.length}</div>
+          <div class="kb-stat-label">Topics</div>
+        </div>
+        <div class="kb-stat">
+          <div class="kb-stat-num" style="color:var(--emerald)">${data.total_chunks}</div>
+          <div class="kb-stat-label">Total Chunks</div>
+        </div>
+        <div class="kb-stat">
+          <div class="kb-stat-num" style="color:var(--violet)">RAG</div>
+          <div class="kb-stat-label">Ready</div>
+        </div>
+      </div>
       <table class="topics-table">
-        <thead><tr><th>Topic</th><th>Status</th></tr></thead>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Topic</th>
+            <th>Status</th>
+          </tr>
+        </thead>
         <tbody>
-          ${data.topics.map(t => `
+          ${data.topics.map((t, i) => `
             <tr>
-              <td><span class="topic-pill">${t}</span></td>
-              <td style="color:var(--green)">✓ Ingested</td>
-            </tr>
-          `).join("")}
+              <td style="color:var(--gray-400);font-family:'JetBrains Mono',monospace;font-size:12px">${String(i+1).padStart(2,"0")}</td>
+              <td><span class="topic-badge">📚 ${t}</span></td>
+              <td><span class="status-ok"><span class="status-dot-ok"></span>Ingested</span></td>
+            </tr>`).join("")}
         </tbody>
-      </table>
-      <div style="margin-top:12px;font-size:12px;color:var(--muted)">
-        Total chunks in knowledge base: <strong style="color:var(--text)">${data.total_chunks}</strong>
-      </div>`;
+      </table>`;
   } catch(e) {
-    wrap.innerHTML = `<div class="empty-msg" style="color:var(--red)">Could not load topics: ${e.message}</div>`;
+    document.getElementById("statStatus").textContent = "Offline ✗";
+    document.getElementById("statStatus").style.color = "var(--rose)";
+    wrap.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">⚠️</div>
+        <div class="empty-text" style="color:var(--rose)">Could not connect to backend.<br>${e.message}</div>
+      </div>`;
   }
 };
 
-// ── DELETE TOPIC ──────────────────────────────────────────────────────────────
+// ── DELETE ────────────────────────────────────────────────────────────────────
 window.deleteTopic = async function() {
   const topic = document.getElementById("deleteTopic").value.trim();
   if (!topic) { alert("Enter a topic to delete"); return; }
-  if (!confirm(`Delete ALL chunks for topic "${topic}"? This cannot be undone.`)) return;
+  if (!confirm(`Delete ALL chunks for topic "${topic}"?\n\nThis cannot be undone.`)) return;
 
   clearLog("deleteLog", `Deleting all chunks for "${topic}"...`);
   try {
@@ -289,13 +614,14 @@ window.deleteTopic = async function() {
     });
     const data = await res.json();
     if (data.error) {
-      log("deleteLog", `ERROR: ${data.error}`, "err");
+      log("deleteLog", `✗ ERROR: ${data.error}`, "err");
     } else {
-      log("deleteLog", `✅ Deleted all chunks for "${topic}"`, "info");
+      log("deleteLog", `✓ Successfully deleted all chunks for "${topic}"`, "info");
+      document.getElementById("deleteTopic").value = "";
       loadTopics();
     }
   } catch(e) {
-    log("deleteLog", `ERROR: ${e.message}`, "err");
+    log("deleteLog", `✗ ERROR: ${e.message}`, "err");
   }
 };
 
@@ -305,7 +631,9 @@ window.testSearch = async function() {
   const topic = document.getElementById("searchTopic").value.trim();
   if (!query) { alert("Enter a search query"); return; }
 
-  clearLog("searchLog", `Searching: "${query}"${topic ? ` (topic: ${topic})` : ""}...`);
+  const results = document.getElementById("searchResults");
+  results.innerHTML = `<div style="color:var(--gray-400);font-size:13px;padding:8px">Searching knowledge base...</div>`;
+
   try {
     const res  = await fetch(`${BACKEND}/rag/search`, {
       method: "POST",
@@ -315,26 +643,36 @@ window.testSearch = async function() {
     const data = await res.json();
 
     if (data.error) {
-      log("searchLog", `ERROR: ${data.error}`, "err");
+      results.innerHTML = `<div class="alert alert-warn">✗ ${data.error}</div>`;
       return;
     }
-
     if (data.count === 0) {
-      log("searchLog", "No chunks found. Try ingesting documents first.", "warn");
+      results.innerHTML = `
+        <div class="empty-state" style="padding:24px">
+          <div class="empty-icon">🔍</div>
+          <div class="empty-text">No chunks found for this query.<br>Try ingesting documents first or lower the similarity threshold.</div>
+        </div>`;
       return;
     }
 
-    log("searchLog", `Found ${data.count} chunks:\n`, "info");
-    data.chunks.forEach((c, i) => {
-      log("searchLog", `── Chunk ${i+1} ──────────────────`);
-      log("searchLog", c.slice(0, 300) + (c.length > 300 ? "..." : ""));
-    });
+    results.innerHTML = `
+      <div style="font-size:13px;font-weight:600;color:var(--emerald);margin-bottom:12px">
+        ✓ Found ${data.count} relevant chunk${data.count > 1 ? "s" : ""} — RAG is working!
+      </div>
+      ${data.chunks.map((c, i) => `
+        <div class="chunk-result">
+          <div class="chunk-header">
+            <div class="chunk-num">${i+1}</div>
+            <div class="chunk-label">Chunk ${i+1} · ${c.length} chars</div>
+          </div>
+          <div class="chunk-text">${c.slice(0, 320)}${c.length > 320 ? "..." : ""}</div>
+        </div>`).join("")}`;
   } catch(e) {
-    log("searchLog", `ERROR: ${e.message}`, "err");
+    results.innerHTML = `<div class="alert alert-warn">✗ Search failed: ${e.message}</div>`;
   }
 };
 
-// Auto-load topics on page open
+// Auto-load on open
 loadTopics();
 </script>
 </body>
