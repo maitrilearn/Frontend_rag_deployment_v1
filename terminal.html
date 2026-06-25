@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>MaitriLearn — Terminal Simulator</title>
-<link rel="icon" href="data:,">
-<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Syne:wght@600;700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💻</text></svg>">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -18,20 +18,44 @@
   --linux:#f97316;--git:#f43f5e;--docker:#38bdf8;--k8s:#a78bfa;
   --prompt:#3fb950;
 }
-html,body{height:100%;font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);overflow:hidden}
+html,body{height:100%;font-family:'Inter','DM Sans',sans-serif;background:var(--bg);color:var(--text);overflow:hidden}
 
 /* ── LAYOUT ── */
 .app{display:flex;flex-direction:column;height:100vh}
 .topbar{
-  display:flex;align-items:center;gap:14px;padding:0 20px;height:50px;
-  background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0;
+  display:flex;align-items:center;gap:14px;padding:0 20px;height:54px;
+  background:rgba(13,20,33,.95);backdrop-filter:blur(16px);
+  border-bottom:1px solid rgba(255,255,255,.06);flex-shrink:0;
+  box-shadow:0 1px 0 rgba(255,255,255,.04);
 }
-.brand{font-family:'Syne',sans-serif;font-weight:800;font-size:15px;color:var(--cyan);text-decoration:none}
+.brand{display:flex;align-items:center;gap:10px;text-decoration:none}
+.brand-mark{
+  width:34px;height:34px;border-radius:10px;
+  background:linear-gradient(135deg,#4f46e5,#7c3aed);
+  display:flex;align-items:center;justify-content:center;font-size:16px;
+  box-shadow:0 3px 10px rgba(79,70,229,.4);
+  position:relative;overflow:hidden;flex-shrink:0;
+}
+.brand-mark::after{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,.2),transparent)}
+.brand-name{
+  font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;font-size:16px;
+  background:linear-gradient(135deg,#818cf8,#c084fc);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+}
 .topbar-sep{color:var(--border2)}
 .topbar-page{font-size:12px;color:var(--muted);font-family:'JetBrains Mono',monospace}
 .topbar-space{flex:1}
-.topbar-back{font-size:12px;color:var(--muted);text-decoration:none;padding:5px 12px;border:1px solid var(--border2);border-radius:6px;transition:all .2s}
-.topbar-back:hover{color:var(--text);border-color:var(--cyan)}
+.topbar-back{
+  font-size:12px;color:rgba(148,163,184,.7);text-decoration:none;
+  padding:6px 14px;border:1px solid rgba(255,255,255,.1);
+  border-radius:8px;transition:all .2s;font-weight:500;
+}
+.topbar-back:hover{color:white;border-color:rgba(79,70,229,.5);background:rgba(79,70,229,.1)}
+.topbar-link{
+  font-size:12px;color:rgba(148,163,184,.6);text-decoration:none;
+  padding:6px 12px;border-radius:7px;transition:all .2s;font-weight:500;
+}
+.topbar-link:hover{background:rgba(255,255,255,.06);color:white}
 
 .main{display:flex;flex:1;overflow:hidden}
 
@@ -42,22 +66,26 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:var(--bg);colo
   display:flex;flex-direction:column;overflow:hidden;
 }
 .panel-header{
-  padding:14px 16px;border-bottom:1px solid var(--border);
-  font-size:11px;font-weight:700;letter-spacing:2px;
-  text-transform:uppercase;color:var(--muted);
+  padding:14px 16px;border-bottom:1px solid rgba(255,255,255,.06);
+  font-size:10px;font-weight:700;letter-spacing:2.5px;
+  text-transform:uppercase;color:rgba(148,163,184,.5);
   display:flex;align-items:center;gap:8px;
+  background:linear-gradient(90deg,rgba(79,70,229,.05),transparent);
 }
+.panel-header::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,rgba(79,70,229,.3),transparent)}
 .panel-scroll{flex:1;overflow-y:auto;padding:8px 0}
 
 /* Context tabs */
-.ctx-tabs{display:flex;padding:8px 12px;gap:4px;border-bottom:1px solid var(--border)}
+.ctx-tabs{display:flex;padding:10px 12px;gap:6px;border-bottom:1px solid rgba(255,255,255,.06)}
 .ctx-tab{
-  flex:1;padding:5px 4px;border-radius:6px;border:none;
-  font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;
-  letter-spacing:.5px;cursor:pointer;transition:all .2s;
-  background:transparent;color:var(--muted);text-transform:uppercase;
+  flex:1;padding:8px 4px;border-radius:8px;border:none;
+  font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;
+  letter-spacing:.5px;cursor:pointer;transition:all .25s;
+  background:rgba(255,255,255,.04);color:rgba(148,163,184,.5);
+  border:1px solid transparent;
 }
-.ctx-tab.active{color:#080c12}
+.ctx-tab:hover{background:rgba(255,255,255,.08);color:rgba(148,163,184,.9)}
+.ctx-tab.active{color:#080c12;border-color:transparent;transform:scale(1.02)}
 .ctx-tab[data-ctx="linux"].active{background:var(--linux)}
 .ctx-tab[data-ctx="git"].active{background:var(--git)}
 .ctx-tab[data-ctx="docker"].active{background:var(--docker)}
@@ -67,9 +95,13 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:var(--bg);colo
 .ch-card{
   padding:12px 16px;border-left:2px solid transparent;
   cursor:pointer;transition:all .2s;margin:2px 8px;border-radius:8px;
+  border:1px solid transparent;
 }
-.ch-card:hover{background:rgba(255,255,255,.04)}
-.ch-card.active{background:rgba(56,189,248,.06);border-left-color:var(--cyan)}
+.ch-card:hover{background:rgba(255,255,255,.05);border-color:rgba(255,255,255,.06)}
+.ch-card.active{
+  background:linear-gradient(90deg,rgba(79,70,229,.1),rgba(124,58,237,.05));
+  border-color:rgba(79,70,229,.2);border-left-color:#818cf8;
+}
 .ch-card.completed{opacity:.5}
 .ch-card.completed .ch-title::after{content:" ✓";color:var(--green)}
 .ch-day{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:4px;font-family:'JetBrains Mono',monospace}
@@ -83,12 +115,15 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:var(--bg);colo
 .diff-hard{background:rgba(248,113,113,.12);color:var(--red)}
 
 .free-practice-btn{
-  margin:8px;padding:10px;border-radius:8px;border:1px dashed var(--border2);
-  background:transparent;color:var(--muted);font-family:inherit;font-size:12px;
+  margin:8px;padding:10px;border-radius:10px;
+  border:1.5px dashed rgba(255,255,255,.1);
+  background:transparent;color:rgba(148,163,184,.6);
+  font-family:inherit;font-size:12px;font-weight:500;
   cursor:pointer;transition:all .2s;width:calc(100% - 16px);
 }
 .free-practice-btn:hover,.free-practice-btn.active{
-  border-color:var(--green);color:var(--green);background:rgba(63,185,80,.06);
+  border-color:rgba(63,185,80,.5);color:#3fb950;
+  background:rgba(63,185,80,.06);
 }
 
 /* ── RIGHT: TERMINAL ── */
@@ -96,7 +131,10 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:var(--bg);colo
 
 /* Challenge bar */
 .challenge-bar{
-  padding:12px 20px;background:var(--surface2);border-bottom:1px solid var(--border);
+  padding:12px 20px;
+  background:linear-gradient(90deg,rgba(79,70,229,.1),rgba(124,58,237,.06),transparent);
+  border-bottom:1px solid rgba(79,70,229,.15);
+  border-bottom:1px solid rgba(79,70,229,.2);
   display:flex;align-items:center;gap:12px;flex-shrink:0;
   min-height:56px;
 }
@@ -104,18 +142,19 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:var(--bg);colo
 .ch-bar-label{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);font-family:'JetBrains Mono',monospace;flex-shrink:0}
 .ch-bar-task{font-size:13px;color:var(--text);flex:1;line-height:1.4}
 .ch-bar-hint{
-  font-size:11px;padding:5px 10px;border-radius:6px;
-  background:rgba(251,191,36,.08);color:var(--yellow);
-  border:1px solid rgba(251,191,36,.2);cursor:pointer;
+  font-size:11px;padding:6px 12px;border-radius:8px;
+  background:rgba(251,191,36,.08);color:#fcd34d;
+  border:1px solid rgba(251,191,36,.25);cursor:pointer;
   white-space:nowrap;flex-shrink:0;transition:all .2s;
-  font-family:'JetBrains Mono',monospace;
+  font-family:'JetBrains Mono',monospace;font-weight:600;
 }
-.ch-bar-hint:hover{background:rgba(251,191,36,.15)}
+.ch-bar-hint:hover{background:rgba(251,191,36,.18);transform:translateY(-1px)}
 .ch-success{
-  display:none;padding:6px 14px;border-radius:6px;
-  background:rgba(63,185,80,.12);color:var(--green);
+  display:none;padding:6px 14px;border-radius:20px;
+  background:rgba(63,185,80,.12);color:#3fb950;
   border:1px solid rgba(63,185,80,.3);font-size:12px;font-weight:700;
   animation:popIn .3s cubic-bezier(.34,1.56,.64,1);
+  box-shadow:0 0 12px rgba(63,185,80,.2);
 }
 .ch-success.show{display:block}
 @keyframes popIn{from{transform:scale(.8);opacity:0}to{transform:scale(1);opacity:1}}
@@ -123,8 +162,9 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:var(--bg);colo
 /* Context indicator */
 .ctx-bar{
   display:flex;align-items:center;gap:8px;
-  padding:6px 20px;background:var(--surface);
-  border-bottom:1px solid var(--border);flex-shrink:0;
+  padding:7px 20px;
+  background:rgba(13,20,33,.6);
+  border-bottom:1px solid rgba(255,255,255,.05);flex-shrink:0;
 }
 .ctx-indicator{
   font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;
@@ -146,8 +186,13 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:var(--bg);colo
 
 /* Terminal output */
 .terminal-output{
-  flex:1;overflow-y:auto;padding:20px;
-  font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.7;
+  flex:1;overflow-y:auto;padding:20px 24px;
+  font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.75;
+  background:
+    linear-gradient(180deg,#080c12 0%,rgba(8,10,16,.99) 100%);
+  /* Subtle scanline effect */
+  background-image:
+    repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(255,255,255,.005) 3px);
 }
 .term-line{margin-bottom:2px}
 .term-cmd{color:var(--prompt)}
@@ -166,19 +211,25 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:var(--bg);colo
   border:none;border-top:1px solid var(--border);margin:12px 0;
 }
 .term-welcome{
-  color:var(--muted);margin-bottom:16px;
-  border:1px solid var(--border);border-radius:8px;padding:14px;
+  color:var(--muted);margin-bottom:20px;
+  border:1px solid rgba(79,70,229,.2);border-radius:12px;padding:18px;
+  background:linear-gradient(135deg,rgba(79,70,229,.06),rgba(124,58,237,.04));
 }
 .term-welcome .tw-title{
-  font-size:14px;font-weight:700;color:var(--cyan);margin-bottom:6px;
+  font-size:14px;font-weight:700;
+  background:linear-gradient(135deg,#818cf8,#c084fc);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  margin-bottom:8px;
 }
-.term-welcome .tw-line{color:var(--muted);margin-bottom:3px}
+.term-welcome .tw-line{color:var(--muted);margin-bottom:4px;font-size:12px}
 
 /* Input bar */
 .input-bar{
   display:flex;align-items:center;gap:0;
-  padding:12px 20px;background:var(--surface);
-  border-top:1px solid var(--border);flex-shrink:0;
+  padding:13px 20px;
+  background:rgba(10,14,22,.98);
+  border-top:1px solid rgba(79,70,229,.15);flex-shrink:0;
+  box-shadow:0 -4px 20px rgba(0,0,0,.3);
 }
 .input-prompt{
   font-family:'JetBrains Mono',monospace;font-size:13px;
@@ -191,13 +242,15 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:var(--bg);colo
 }
 .cmd-input::placeholder{color:var(--dim)}
 .run-btn{
-  padding:6px 16px;border-radius:6px;border:none;
-  background:var(--green);color:#080c12;
+  padding:9px 20px;border-radius:9px;border:none;
+  background:linear-gradient(135deg,#4f46e5,#7c3aed);
+  color:white;
   font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;
-  cursor:pointer;transition:all .2s;margin-left:10px;white-space:nowrap;
+  cursor:pointer;transition:all .2s;margin-left:12px;white-space:nowrap;
+  box-shadow:0 3px 14px rgba(79,70,229,.5);letter-spacing:.5px;
 }
-.run-btn:hover:not(:disabled){opacity:.85}
-.run-btn:disabled{opacity:.4;cursor:not-allowed}
+.run-btn:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 5px 20px rgba(79,70,229,.6)}
+.run-btn:disabled{opacity:.4;cursor:not-allowed;transform:none}
 .loading-dot{
   display:inline-block;width:6px;height:6px;border-radius:50%;
   background:var(--green);margin:0 2px;
@@ -228,18 +281,25 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:var(--bg);colo
 
   <!-- TOPBAR -->
   <header class="topbar">
-    <a href="index.html" class="brand">MaitriLearn</a>
+    <a href="index.html" class="brand">
+      <div class="brand-mark">🎓</div>
+      <span class="brand-name">MaitriLearn</span>
+    </a>
     <span class="topbar-sep">/</span>
     <span class="topbar-page">terminal-simulator</span>
     <div class="topbar-space"></div>
-    <a href="index.html" class="topbar-back">← Dashboard</a>
+    <div style="display:flex;align-items:center;gap:6px">
+      <a href="whiteboard.html" class="topbar-link">🏫 Whiteboard</a>
+      <a href="devops.html" class="topbar-link">🚀 DevOps</a>
+      <a href="index.html" class="topbar-back">← Dashboard</a>
+    </div>
   </header>
 
   <div class="main">
 
     <!-- CHALLENGES PANEL -->
     <aside class="challenges-panel">
-      <div class="panel-header">⚡ Challenges</div>
+      <div class="panel-header">⚡ Challenges <span id="challengeCount" style="font-size:10px;background:rgba(79,70,229,.2);color:#818cf8;padding:1px 7px;border-radius:10px;letter-spacing:0;font-weight:700;margin-left:4px"></span></div>
 
       <div class="ctx-tabs">
         <button class="ctx-tab active" data-ctx="linux" onclick="switchCtx('linux')">🐧</button>
@@ -252,6 +312,7 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:var(--bg);colo
 
       <button class="free-practice-btn" id="freePracticeBtn" onclick="startFreePractice()">
         🖥 Free Practice Mode
+        <span style="display:block;font-size:10px;opacity:.6;margin-top:2px">Type any command freely</span>
       </button>
     </aside>
 
@@ -260,9 +321,9 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:var(--bg);colo
 
       <!-- Challenge bar -->
       <div class="challenge-bar hidden" id="challengeBar">
-        <span class="ch-bar-label">Task</span>
+        <span class="ch-bar-label">📋 Task</span>
         <span class="ch-bar-task" id="chBarTask"></span>
-        <div class="ch-success" id="chSuccess">✅ Challenge Complete!</div>
+        <div class="ch-success" id="chSuccess">🎉 Complete!</div>
         <button class="ch-bar-hint" onclick="showHint()" id="hintBtn">💡 Hint</button>
       </div>
 
@@ -276,11 +337,17 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:var(--bg);colo
 
       <!-- Output -->
       <div class="terminal-output" id="termOutput">
-        <div class="term-welcome">
-          <div class="tw-title">🖥 MaitriLearn Terminal Simulator</div>
-          <div class="tw-line">Powered by AI — type real DevOps commands and get realistic output.</div>
-          <div class="tw-line">Select a challenge from the left, or use Free Practice mode.</div>
-          <div class="tw-line" style="margin-top:8px;color:#374151">↑↓ arrow keys for command history • Enter to run</div>
+        <div class="term-welcome" style="border:1px solid rgba(79,70,229,.2);background:linear-gradient(135deg,rgba(79,70,229,.06),rgba(124,58,237,.04));border-radius:12px;padding:20px">
+          <div class="tw-title" style="font-size:16px;margin-bottom:10px;background:linear-gradient(135deg,#818cf8,#c084fc);-webkit-background-clip:text;-webkit-text-fill-color:transparent;font-family:'Plus Jakarta Sans',sans-serif;font-weight:800">🖥 MaitriLearn Terminal Simulator</div>
+          <div class="tw-line" style="color:#94a3b8;margin-bottom:4px">⚡ AI-powered — type real DevOps commands and get realistic output</div>
+          <div class="tw-line" style="color:#94a3b8;margin-bottom:12px">Pick a challenge from the left panel, or use Free Practice mode</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <span style="padding:4px 12px;border-radius:20px;background:rgba(249,115,22,.1);color:#f97316;border:1px solid rgba(249,115,22,.2);font-size:11px;font-weight:700;font-family:'JetBrains Mono',monospace">🐧 Linux</span>
+            <span style="padding:4px 12px;border-radius:20px;background:rgba(244,63,94,.1);color:#f43f5e;border:1px solid rgba(244,63,94,.2);font-size:11px;font-weight:700;font-family:'JetBrains Mono',monospace">🌿 Git</span>
+            <span style="padding:4px 12px;border-radius:20px;background:rgba(56,189,248,.1);color:#38bdf8;border:1px solid rgba(56,189,248,.2);font-size:11px;font-weight:700;font-family:'JetBrains Mono',monospace">🐳 Docker</span>
+            <span style="padding:4px 12px;border-radius:20px;background:rgba(167,139,250,.1);color:#a78bfa;border:1px solid rgba(167,139,250,.2);font-size:11px;font-weight:700;font-family:'JetBrains Mono',monospace">☸️ K8s</span>
+            <span style="padding:4px 12px;border-radius:20px;background:rgba(255,255,255,.05);color:#64748b;border:1px solid rgba(255,255,255,.08);font-size:11px;font-weight:700;font-family:'JetBrains Mono',monospace">↑↓ history</span>
+          </div>
         </div>
       </div>
 
@@ -296,8 +363,13 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:var(--bg);colo
           autocapitalize="none"
           spellcheck="false"
         >
-        <span class="input-hint">↑↓ history</span>
+        <span class="input-hint" style="display:flex;align-items:center;gap:10px">
+          <span>↑↓ history</span>
+          <span style="color:rgba(55,65,81,.6)">|</span>
+          <span>Esc clear</span>
+        </span>
         <button class="run-btn" id="runBtn" onclick="runCommand()">▶ Run</button>
+        <span style="font-size:10px;color:rgba(100,116,139,.5);margin-left:6px;font-family:'JetBrains Mono',monospace;white-space:nowrap">Enter ↵</span>
       </div>
 
     </main>
@@ -330,6 +402,7 @@ async function init() {
   }
   renderChallengeList();
   setupInput();
+  updateChallengeCount();
 }
 
 // ── CHALLENGE LIST ─────────────────────────────────────────────────────────────
@@ -490,9 +563,12 @@ window.runCommand = async function() {
       if (data.challenge_completed && currentChallenge) {
         completedIds.add(currentChallenge.id);
         localStorage.setItem("ml_completed", JSON.stringify([...completedIds]));
+        const total = Object.values(allChallenges).flat().length;
+        const cc = document.getElementById("completedCount");
+        if(cc) cc.textContent = completedIds.size + "/" + total + " done";
         document.getElementById("chSuccess").classList.add("show");
         document.getElementById("hintBtn").style.display = "none";
-        appendOutput("success", "🎉 Challenge complete! Great job!");
+        appendOutput("success", "🎉 Challenge complete! Excellent work — moving to next challenge...");
         renderChallengeList();
         // Auto-load next challenge after 2s
         setTimeout(loadNextChallenge, 2000);
@@ -573,6 +649,7 @@ function setupInput() {
 
   input.addEventListener("keydown", e => {
     if (e.key === "Enter") { runCommand(); return; }
+    if (e.key === "Escape") { input.value = ""; historyIndex = -1; return; }
     if (e.key === "ArrowUp") {
       e.preventDefault();
       if (historyIndex < cmdHistory.length - 1) {
@@ -619,7 +696,30 @@ const FALLBACK_CHALLENGES = {
   ]
 };
 
+function updateChallengeCount() {
+  const all   = allChallenges[currentCtx] || [];
+  const done  = all.filter(c => completedIds.has(c.id)).length;
+  const countEl = document.getElementById("challengeCount");
+  if (countEl) countEl.textContent = `${done}/${all.length}`;
+}
+
+// Override switchCtx to update count
+const _origSwitch = window.switchCtx;
+window.switchCtx = function(ctx) {
+  _origSwitch(ctx);
+  updateChallengeCount();
+};
+
 init();
+
+// Show completed count on load
+window.addEventListener("DOMContentLoaded", () => {
+  setTimeout(() => {
+    const total = Object.values(allChallenges).flat().length;
+    const cc = document.getElementById("completedCount");
+    if(cc && total > 0) cc.textContent = completedIds.size + "/" + total + " done";
+  }, 500);
+});
 
 // Auto-switch context from URL param (DevOps course)
 window.addEventListener("DOMContentLoaded", () => {
