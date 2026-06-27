@@ -1,36 +1,29 @@
-const supabaseClient = supabase.createClient(
-  SUPABASE_URL,
-  SUPABASE_KEY
-);
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 window.uploadNoteService = async function (file, metadata) {
   const fileName = `${Date.now()}_${file.name}`;
 
-  // Upload file to storage
+  // Step 1: Upload file to Supabase Storage
   const { error: uploadError } = await supabaseClient
-    .storage
-    .from("notes")
-    .upload(fileName, file);
+    .storage.from("notes").upload(fileName, file);
 
   if (uploadError) {
     console.error("Upload failed:", uploadError);
     throw new Error("File upload failed: " + uploadError.message);
   }
 
-  // Get public URL
-  const { data } = supabaseClient
-    .storage
-    .from("notes")
-    .getPublicUrl(fileName);
+  // Step 2: Get public URL
+  const { data: urlData } = supabaseClient
+    .storage.from("notes").getPublicUrl(fileName);
 
-  // Save metadata to notes_metadata table
+  // Step 3: Save metadata
   const { error: metaError } = await supabaseClient
     .from("notes_metadata")
     .insert([{
       student_class: metadata.student_class,
       subject:       metadata.subject,
       topic:         metadata.topic,
-      url:           data.publicUrl
+      url:           urlData.publicUrl
     }]);
 
   if (metaError) {
@@ -38,45 +31,53 @@ window.uploadNoteService = async function (file, metadata) {
     throw new Error("Metadata save failed: " + metaError.message);
   }
 
-  // BUG FIX: RAG ingest runs in background — don't block upload success
-  // Large PDFs take 30-60s to ingest — user shouldn't wait
-  fetch(`${BACKEND_URL}/rag/ingest`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      filename:  fileName,
-      topic:     metadata.topic || "General",
-      bucket:    "notes",
-      max_pages: 20
-    })
-  })
-  .then(r => r.json())
-  .then(result => {
-    if (result.chunks_stored > 0) {
-      console.log(`[rag] Ingested ${result.chunks_stored} chunks for ${metadata.topic}`);
-    }
-  })
-  .catch(err => console.warn("[rag] Background ingest:", err.message));
+  // Step 4: RAG ingest — wait for it so user sees feedback
+  // Use BACKEND_URL from config.js
+  const backendUrl = typeof BACKEND_URL !== "undefined"
+    ? BACKEND_URL : "http://localhost:5000";
 
-  // Return immediately — don't wait for RAG
-  return { fileName, publicUrl: data.publicUrl };
+  let ragResult = null;
+  try {
+    const ragRes = await fetch(`${backendUrl}/rag/ingest`, {
+      method:  "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        filename:  fileName,
+        topic:     metadata.topic || metadata.subject || "General",
+        bucket:    "notes",
+        max_pages: 30
+      })
+    });
+
+    ragResult = await ragRes.json();
+
+    if (ragResult.chunks_stored > 0) {
+      console.log(`[rag] ✅ Ingested ${ragResult.chunks_stored} chunks for "${metadata.topic}"`);
+    } else if (ragResult.error) {
+      console.warn("[rag] Ingest warning:", ragResult.error);
+    }
+  } catch (err) {
+    // RAG ingest failed — file is still uploaded, just not in knowledge base
+    console.warn("[rag] Ingest failed:", err.message);
+    ragResult = { error: err.message };
+  }
+
+  return {
+    fileName,
+    publicUrl:    urlData.publicUrl,
+    ragResult,
+    chunksStored: ragResult?.chunks_stored || 0
+  };
 };
 
 window.searchNotesService = async function (search) {
-  // BUG FIX: search was failing silently when notes_metadata table was empty
-  // or when topic column had no match — now returns [] properly
   if (!search || !search.trim()) {
-    // Return all notes if search is empty
     const { data, error } = await supabaseClient
       .from("notes_metadata")
       .select("*")
       .order("id", { ascending: false })
       .limit(20);
-
-    if (error) {
-      console.error("Search failed:", error);
-      return [];
-    }
+    if (error) { console.error("Search failed:", error); return []; }
     return data || [];
   }
 
@@ -86,10 +87,6 @@ window.searchNotesService = async function (search) {
     .or(`topic.ilike.%${search}%,subject.ilike.%${search}%`)
     .order("id", { ascending: false });
 
-  if (error) {
-    console.error("Search failed:", error);
-    return [];
-  }
-
+  if (error) { console.error("Search failed:", error); return []; }
   return data || [];
 };
