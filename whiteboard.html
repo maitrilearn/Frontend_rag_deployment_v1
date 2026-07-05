@@ -181,6 +181,7 @@ html,body{height:100%;overflow:hidden;font-family:'DM Sans',sans-serif;backgroun
 .board-wrap::before{top:0;background:linear-gradient(to bottom,rgba(232,224,208,.06),transparent)}
 .board-wrap::after{bottom:0;background:linear-gradient(to top,rgba(232,224,208,.06),transparent)}
 #boardScroll{position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;padding:28px 36px 48px;scroll-behavior:smooth}
+#boardContent{max-width:880px;margin:0 auto}
 
 /* RAG badge */
 .rag-badge{
@@ -359,6 +360,46 @@ html,body{height:100%;overflow:hidden;font-family:'DM Sans',sans-serif;backgroun
   padding:7px 20px;border-bottom:1px solid rgba(255,255,255,.04);
   background:rgba(255,255,255,.015);flex-shrink:0;
 }
+
+/* ── CHALKBOARD STEP (important points) ── */
+.chalkboard-card{
+  background:linear-gradient(160deg,#0f2818,#0a1f12);
+  border:2px solid rgba(63,185,80,.25);
+  border-radius:14px;padding:24px 28px;
+  box-shadow:inset 0 0 60px rgba(0,0,0,.3),0 4px 20px rgba(0,0,0,.3);
+  position:relative;overflow:hidden;
+}
+.chalkboard-card::before{
+  content:'📌';position:absolute;top:-10px;right:20px;font-size:32px;
+  filter:drop-shadow(0 4px 8px rgba(0,0,0,.4));
+}
+.chalkboard-heading{
+  font-family:'Caveat',cursive;font-size:26px;font-weight:700;
+  color:#86efac;margin-bottom:18px;
+  text-shadow:0 0 20px rgba(134,239,172,.3);
+}
+.chalk-points{display:flex;flex-direction:column;gap:14px}
+.chalk-point{
+  display:flex;gap:12px;align-items:flex-start;
+  opacity:0;transition:opacity .3s ease;
+}
+.chalk-point.visible{opacity:1}
+.chalk-point-marker{
+  width:8px;height:8px;border-radius:50%;
+  background:#3fb950;flex-shrink:0;margin-top:9px;
+  box-shadow:0 0 8px #3fb950;
+}
+.chalk-point-text{
+  font-family:'Caveat',cursive;font-size:20px;font-weight:600;
+  color:#d1fae5;line-height:1.5;
+}
+
+/* ── BIGGER ARCHITECTURE DIAGRAM (sequential flow style) ── */
+.arch-canvas-wrap-v2{
+  position:relative;width:100%;overflow-x:auto;overflow-y:hidden;
+  padding:20px 0 10px;
+}
+.arch-svg-v2{display:block;margin:0 auto}
 </style>
 </head>
 <body>
@@ -453,7 +494,7 @@ const COLORS=[
   {bg:"rgba(57,211,240,.12)",   border:"#39d3f0",  text:"#39d3f0"},
 ];
 
-const ICONS={title:"🏷",concept:"💡",steps:"📋",example:"⚙️",codefile:"📄",architecture:"🏗",flowdiagram:"🔀",timeline:"⏱",comparison:"⚖️",keypoints:"⭐"};
+const ICONS={title:"🏷",concept:"💡",steps:"📋",example:"⚙️",codefile:"📄",architecture:"🏗",flowdiagram:"🔀",timeline:"⏱",comparison:"⚖️",keypoints:"⭐",chalkboard:"📌"};
 
 const $=id=>document.getElementById(id);
 function wait(ms){return new Promise(r=>{const t=setTimeout(r,ms/getSpeed());_timers.push(t);})}
@@ -638,70 +679,123 @@ async function renderCodefile(step){
 async function renderArchitecture(step){
   const nodes=step.nodes||[];
   const connections=step.connections||[];
-  const cols=Math.min(nodes.length,4);
-  const rows=Math.ceil(nodes.length/cols);
-  const W=160,H=80,gx=80,gy=60,padX=40,padY=30;
-  const svgW=cols*W+(cols-1)*gx+padX*2;
-  const svgH=rows*H+(rows-1)*gy+padY*2+40;
 
-  // Compute node positions
-  const pos={};
-  nodes.forEach((n,i)=>{
-    const col=i%cols, row=Math.floor(i/cols);
-    pos[n.id||i]={x:padX+col*(W+gx)+W/2, y:padY+row*(H+gy)+H/2, idx:i};
+  // SEQUENTIAL FLOW LAYOUT — nodes placed left to right in connection order
+  // Build ordered sequence by following connections, fallback to array order
+  const idToNode = {};
+  nodes.forEach((n,i)=>{ idToNode[n.id||i] = {...n, idx:i}; });
+
+  let orderedIds = [];
+  if(connections.length > 0){
+    // Start from first connection's "from", follow the chain
+    const visited = new Set();
+    let current = connections[0].from;
+    orderedIds.push(current); visited.add(current);
+    let safety = 0;
+    while(safety++ < nodes.length+2){
+      const next = connections.find(c => c.from === current && !visited.has(c.to));
+      if(!next) break;
+      orderedIds.push(next.to); visited.add(next.to); current = next.to;
+    }
+    // Add any unvisited nodes
+    nodes.forEach(n => { const id = n.id; if(!visited.has(id)) orderedIds.push(id); });
+  } else {
+    orderedIds = nodes.map((n,i) => n.id || i);
+  }
+
+  const W=170, H=100, gap=70, padX=40, padY=50;
+  const wrapPerRow = Math.min(orderedIds.length, 3); // wrap to new row every 3 for big diagrams
+  const rows = Math.ceil(orderedIds.length / wrapPerRow);
+  const svgW = wrapPerRow*W + (wrapPerRow-1)*gap + padX*2;
+  const svgH = rows*H + (rows-1)*(gap+20) + padY*2;
+
+  const pos = {};
+  orderedIds.forEach((id, i) => {
+    const row = Math.floor(i / wrapPerRow);
+    const col = i % wrapPerRow;
+    // Snake layout: even rows L->R, odd rows R->L
+    const visualCol = row % 2 === 0 ? col : (wrapPerRow - 1 - col);
+    pos[id] = {
+      x: padX + visualCol*(W+gap) + W/2,
+      y: padY + row*(H+gap+20) + H/2,
+      row, col
+    };
   });
 
-  const nodesHTML=nodes.map((n,i)=>{
-    const c=COLORS[i%COLORS.length];
-    const p=pos[n.id||i];
+  const nodesHTML = orderedIds.map((id,i) => {
+    const n = idToNode[id] || {label:id, description:"", role:""};
+    const c = COLORS[i%COLORS.length];
+    const p = pos[id];
+    const roleColors = {input:"#3fb950", process:"#58a6ff", output:"#bc8cff"};
+    const roleColor = roleColors[n.role] || c.text;
     return `<g class="arch-node" id="an_${i}" style="transform-origin:${p.x}px ${p.y}px">
-      <rect x="${p.x-W/2}" y="${p.y-H/2}" width="${W}" height="${H}" rx="10"
-        fill="${c.bg}" stroke="${c.border}" stroke-width="1.5"/>
-      <text x="${p.x}" y="${p.y-8}" text-anchor="middle" class="arch-label-text" fill="${c.text}">${esc(n.label)}</text>
-      <text x="${p.x}" y="${p.y+12}" text-anchor="middle" class="arch-sub-text">${esc(n.description||"")}</text>
-      ${n.role?`<rect x="${p.x-25}" y="${p.y+24}" width="50" height="14" rx="7" fill="${c.bg}" stroke="${c.border}"/>
-      <text x="${p.x}" y="${p.y+34}" text-anchor="middle" style="font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;fill:${c.text}">${esc(n.role)}</text>`:""}
+      <rect x="${p.x-W/2}" y="${p.y-H/2}" width="${W}" height="${H}" rx="12"
+        fill="${c.bg}" stroke="${c.border}" stroke-width="2"/>
+      <circle cx="${p.x-W/2+18}" cy="${p.y-H/2+18}" r="11" fill="${c.border}"/>
+      <text x="${p.x-W/2+18}" y="${p.y-H/2+23}" text-anchor="middle" style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;fill:white">${i+1}</text>
+      <text x="${p.x}" y="${p.y-8}" text-anchor="middle" class="arch-label-text" fill="${c.text}" style="font-size:15px">${esc(n.label)}</text>
+      <foreignObject x="${p.x-W/2+10}" y="${p.y+2}" width="${W-20}" height="${H/2-10}">
+        <div xmlns="http://www.w3.org/1999/xhtml" style="font-family:'DM Sans',sans-serif;font-size:10.5px;color:var(--muted);line-height:1.35;text-align:center;overflow:hidden">${esc(n.description||"")}</div>
+      </foreignObject>
+      ${n.role?`<rect x="${p.x-28}" y="${p.y+H/2-20}" width="56" height="15" rx="7" fill="${roleColor}22" stroke="${roleColor}66"/>
+      <text x="${p.x}" y="${p.y+H/2-9}" text-anchor="middle" style="font-family:'JetBrains Mono',monospace;font-size:8.5px;font-weight:700;fill:${roleColor};letter-spacing:.5px">${esc(n.role.toUpperCase())}</text>`:""}
     </g>`;
   }).join("");
 
-  const arrowsHTML=connections.map((conn,i)=>{
-    const from=pos[conn.from]||pos[0];
-    const to=pos[conn.to]||pos[1];
-    const mx=(from.x+to.x)/2, my=(from.y+to.y)/2;
+  const arrowsHTML = orderedIds.slice(0,-1).map((id,i) => {
+    const fromPos = pos[id];
+    const toId    = orderedIds[i+1];
+    const toPos   = pos[toId];
+    const conn    = connections.find(c => c.from===id && c.to===toId);
+    const color   = COLORS[i%COLORS.length].border;
+
+    let x1,y1,x2,y2,midX,midY;
+    if(fromPos.row === toPos.row){
+      // Same row — horizontal arrow
+      const goingRight = toPos.x > fromPos.x;
+      x1 = goingRight ? fromPos.x+W/2 : fromPos.x-W/2;
+      y1 = fromPos.y;
+      x2 = goingRight ? toPos.x-W/2 : toPos.x+W/2;
+      y2 = toPos.y;
+      midX = (x1+x2)/2; midY = y1-14;
+    } else {
+      // Different row — vertical connector (snake down)
+      x1 = fromPos.x; y1 = fromPos.y+H/2;
+      x2 = toPos.x;   y2 = toPos.y-H/2;
+      midX = x1; midY = (y1+y2)/2;
+    }
+
     return `<g class="arch-arrow" id="aa_${i}">
-      <defs><marker id="ah_${i}" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
-        <path d="M0,0 L0,6 L8,3 z" fill="${COLORS[i%COLORS.length].border}"/>
+      <defs><marker id="ah_${i}" markerWidth="9" markerHeight="9" refX="7" refY="3.5" orient="auto">
+        <path d="M0,0 L0,7 L9,3.5 z" fill="${color}"/>
       </marker></defs>
-      <line x1="${from.x}" y1="${from.y}" x2="${to.x}" y2="${to.y}"
-        stroke="${COLORS[i%COLORS.length].border}" stroke-width="1.5" stroke-dasharray="5,3"
-        marker-end="url(#ah_${i})"/>
-      ${conn.label?`<text x="${mx}" y="${my-6}" text-anchor="middle" style="font-family:'DM Sans',sans-serif;font-size:11px;fill:var(--muted)">${esc(conn.label)}</text>`:""}
+      <line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"
+        stroke="${color}" stroke-width="2.5" marker-end="url(#ah_${i})"/>
+      ${conn?.label?`<rect x="${midX-40}" y="${midY-9}" width="80" height="16" rx="8" fill="var(--bg,#080c12)" stroke="${color}44"/>
+      <text x="${midX}" y="${midY+3}" text-anchor="middle" style="font-family:'JetBrains Mono',monospace;font-size:9.5px;font-weight:600;fill:${color}">${esc(conn.label)}</text>`:""}
     </g>`;
   }).join("");
 
   appendCard(`<div class="step-card">
     <h2 class="step-heading">${ICONS.architecture} ${step.heading||"Architecture"}</h2>
-    <div class="arch-canvas-wrap">
-      <svg class="arch-svg" viewBox="0 0 ${svgW} ${svgH}" height="${svgH}">
+    <div class="arch-canvas-wrap-v2">
+      <svg class="arch-svg-v2" viewBox="0 0 ${svgW} ${svgH}" width="${Math.min(svgW,800)}" height="${svgH*Math.min(svgW,800)/svgW}">
         ${arrowsHTML}${nodesHTML}
       </svg>
     </div>
   </div>`);
 
   await wait(300);
-  // Draw nodes one by one
-  for(let i=0;i<nodes.length;i++){
+  for(let i=0;i<orderedIds.length;i++){
     if(paused)return;
     show(`an_${i}`);
-    await wait(280);
+    await wait(380);
+    if(i < orderedIds.length-1){
+      show(`aa_${i}`);
+      await wait(250);
+    }
   }
-  // Then draw arrows
-  for(let i=0;i<connections.length;i++){
-    if(paused)return;
-    show(`aa_${i}`);
-    await wait(200);
-  }
-  await wait(500);
+  await wait(600);
 }
 
 async function renderFlowdiagram(step){
@@ -801,6 +895,35 @@ async function renderKeypoints(step){
   await wait(500);
 }
 
+async function renderChalkboard(step){
+  const points = step.points || [];
+  const pointsHTML = points.map((p,i) => {
+    const text = typeof p === "object" ? p.text : p;
+    return `<div class="chalk-point" id="cp_${i}">
+      <div class="chalk-point-marker"></div>
+      <div class="chalk-point-text" id="cpText_${i}"></div>
+    </div>`;
+  }).join("");
+
+  appendCard(`<div class="step-card">
+    <div class="chalkboard-card">
+      <div class="chalkboard-heading">📌 ${step.heading||"Important Points"}</div>
+      <div class="chalk-points">${pointsHTML}</div>
+    </div>
+  </div>`);
+
+  await wait(300);
+  for(let i=0;i<points.length;i++){
+    if(paused)return;
+    const text = typeof points[i] === "object" ? points[i].text : points[i];
+    show(`cp_${i}`);
+    await wait(100);
+    await typeInto($(`cpText_${i}`), text, 20);
+    await wait(250);
+  }
+  await wait(500);
+}
+
 async function renderStep(step){
   switch(step.type){
     case "title":        await renderTitle(step);        break;
@@ -812,6 +935,7 @@ async function renderStep(step){
     case "flowdiagram":  await renderFlowdiagram(step);  break;
     case "timeline":     await renderTimeline(step);     break;
     case "comparison":   await renderComparison(step);   break;
+    case "chalkboard":   await renderChalkboard(step);   break;
     case "keypoints":    await renderKeypoints(step);    break;
     default:             await renderConcept({...step,definition:step.body||step.text||"",analogy:""}); break;
   }
@@ -825,14 +949,40 @@ function narrate(text){
     const fallback=Math.min(Math.max((text.length*55)/speed,2500),10000);
     const useVoice=$("voiceToggle")&&$("voiceToggle").checked;
     if(!useVoice){_timers.push(setTimeout(()=>{setTalking(false);resolve();},fallback));return;}
-    fetch(`${VOICE}/generate`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({prompt:text})})
+
+    // BUG FIX: ngrok-skip-browser-warning header needed for mobile —
+    // without it, ngrok shows an interception page instead of JSON/audio
+    fetch(`${VOICE}/generate`,{
+      method:"POST",
+      headers:{
+        "Content-Type":"application/json",
+        "ngrok-skip-browser-warning":"true"
+      },
+      body:JSON.stringify({prompt:text})
+    })
     .then(r=>{if(!r.ok)throw new Error(r.status);return r.json();})
-    .then(data=>{
-      const audio=new Audio(`${VOICE}${data.audio}`);currentAudio=audio;
-      audio.playbackRate=speed;
-      audio.onended=()=>{setTalking(false);currentAudio=null;resolve();};
-      audio.onerror=()=>{setTalking(false);currentAudio=null;resolve();};
-      audio.play().catch(()=>{setTalking(false);resolve();});
+    .then(async data=>{
+      const audioUrl = data.audio_url || `${VOICE}${data.audio}`;
+
+      // BUG FIX: fetch audio as blob with bypass header instead of
+      // setting <audio src> directly — avoids ngrok interception on mobile
+      try{
+        const audioRes = await fetch(audioUrl, {
+          headers:{"ngrok-skip-browser-warning":"true"}
+        });
+        if(!audioRes.ok) throw new Error("audio fetch failed "+audioRes.status);
+        const blob = await audioRes.blob();
+        const blobUrl = URL.createObjectURL(blob);
+
+        const audio=new Audio(blobUrl);currentAudio=audio;
+        audio.playbackRate=speed;
+        audio.onended=()=>{setTalking(false);currentAudio=null;URL.revokeObjectURL(blobUrl);resolve();};
+        audio.onerror=()=>{setTalking(false);currentAudio=null;URL.revokeObjectURL(blobUrl);resolve();};
+        audio.play().catch(()=>{setTalking(false);resolve();});
+      }catch(audioErr){
+        console.warn("[voice] audio blob fetch failed:",audioErr.message);
+        setTalking(false);resolve();
+      }
     })
     .catch(()=>{_timers.push(setTimeout(()=>{setTalking(false);resolve();},fallback));});
   });
