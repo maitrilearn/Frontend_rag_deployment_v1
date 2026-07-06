@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>MaitriLearn — AI-Powered Learning Platform | Free for Students</title>
   <!-- ── SEO META TAGS ── -->
-  <meta name="description" content="Learn any subject with your own AI teacher. Upload your notes, get visual whiteboard lessons, practice DevOps commands, and ask doubts 24/7. Completely free.">
+  <meta name="description" content="Learn any subject with your own AI teacher. Upload your notes, get visual whiteboard lessons, practice DevOps commands, and ask doubts 24/7. Built for students.">
   <meta name="keywords"    content="AI learning, AI tutor, whiteboard teaching, DevOps course, RAG learning, Indian education, free learning platform">
   <meta name="author"      content="MaitriLearn">
   <meta name="robots"      content="index, follow">
@@ -816,7 +816,7 @@ footer{
     <div class="stats-divider"></div>
     <div class="stat">
       <div class="stat-num"><span>₹0</span></div>
-      <div class="stat-label">Completely Free</div>
+      <div class="stat-label">For Students</div>
     </div>
     <div class="stats-divider"></div>
     <div class="stat">
@@ -1069,8 +1069,15 @@ footer{
         </div>
         <div class="tool-body">
           <div class="tool-form">
-            <textarea class="tf" id="voiceTutorInput" placeholder="Ask anything — I'll answer in Indian English voice..."></textarea>
-            <button class="tbtn tbtn-primary" onclick="generateVoiceTutor()">🎤 Ask Voice Tutor</button>
+            <textarea class="tf" id="voiceTutorInput" placeholder="Speak or type your question..."></textarea>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+              <button class="tbtn tbtn-primary" id="voiceMicBtn" onclick="startVoiceInput()"
+                style="background:linear-gradient(135deg,#e11d48,#be185d)">
+                🎙 Speak
+              </button>
+              <button class="tbtn tbtn-primary" onclick="generateVoiceTutor()">🎤 Ask</button>
+            </div>
+            <div id="sttStatus" style="font-size:12px;color:var(--gray-400);margin-top:2px;min-height:18px"></div>
             <div id="voiceStatus"></div>
             <div class="terror" id="voiceError"></div>
             <div class="voice-result" id="voiceResult">
@@ -1133,7 +1140,7 @@ footer{
     </div>
     <div class="foot-bottom">
       <span class="foot-copy">© 2026 MaitriLearn · Built with ❤️ for students everywhere</span>
-      <div class="foot-badge">✨ AI-Powered · Free Forever</div>
+      <div class="foot-badge">✨ AI-Powered · For Students</div>
     </div>
   </div>
 </footer>
