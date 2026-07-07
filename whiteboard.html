@@ -1016,9 +1016,25 @@ window.startLesson=async function(){
   // Remove old RAG badge
   document.querySelectorAll(".rag-badge").forEach(e=>e.remove());
   try{
-    const res=await fetch(`${BACKEND}/whiteboard/lesson`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({topic})});
-    if(!res.ok)throw new Error("Backend "+res.status);
-    const data=await res.json();
+    // Retry up to 2 times on rate limit (429/503)
+    let res, data, lastErr;
+    const delays=[3000,6000];
+    for(let attempt=0;attempt<=2;attempt++){
+      try{
+        res  = await fetch(`${BACKEND}/whiteboard/lesson`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({topic})});
+        data = await res.json();
+        if((res.status===429||res.status===503)&&attempt<2){
+          const wait=delays[attempt]||3000;
+          setSpeech(`Rate limited — retrying in ${wait/1000}s... (attempt ${attempt+1}/2)`);
+          setStatus("LOADING","loading");
+          await new Promise(r=>setTimeout(r,wait));
+          continue;
+        }
+        break;
+      }catch(e){lastErr=e;if(attempt<2){await new Promise(r=>setTimeout(r,delays[attempt]||3000));}}
+    }
+    if(!res||!data) throw lastErr||new Error("Request failed after retries");
+    if(!res.ok) throw new Error("Backend "+res.status);
     if(data.error)throw new Error(data.error);
     lesson=data.lesson;
     buildStepList(lesson.steps);
