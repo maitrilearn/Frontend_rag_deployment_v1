@@ -692,14 +692,18 @@ window.testSearch = async function() {
       <div style="font-size:13px;font-weight:600;color:var(--emerald);margin-bottom:12px">
         ✓ Found ${data.count} relevant chunk${data.count > 1 ? "s" : ""} — RAG is working!
       </div>
-      ${data.chunks.map((c, i) => `
-        <div class="chunk-result">
+      ${(Array.isArray(data.chunks) ? data.chunks : []).map((c, i) => {
+        // c can be a string or a dict {content, source}
+        const text   = typeof c === "object" ? (c.content || JSON.stringify(c)) : String(c || "");
+        const preview = text.slice(0, 320) + (text.length > 320 ? "..." : "");
+        return `<div class="chunk-result">
           <div class="chunk-header">
             <div class="chunk-num">${i+1}</div>
-            <div class="chunk-label">Chunk ${i+1} · ${c.length} chars</div>
+            <div class="chunk-label">Chunk ${i+1} · ${text.length} chars${typeof c === "object" && c.source ? " · " + c.source : ""}</div>
           </div>
-          <div class="chunk-text">${c.slice(0, 320)}${c.length > 320 ? "..." : ""}</div>
-        </div>`).join("")}`;
+          <div class="chunk-text">${preview}</div>
+        </div>`;
+      }).join("")}`;
   } catch(e) {
     results.innerHTML = `<div class="alert alert-warn">✗ Search failed: ${e.message}</div>`;
   }
