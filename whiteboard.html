@@ -413,6 +413,45 @@ html,body{height:100%;overflow:hidden;font-family:'DM Sans',sans-serif;backgroun
   color:#d1fae5;line-height:1.5;
 }
 
+/* ── REMEMBER CARD (amber variant of chalkboard, for 'remember' step type) ── */
+.remember-card{
+  background:linear-gradient(160deg,#2a1e08,#1f1605);
+  border:2px solid rgba(245,158,11,.3);
+  border-radius:14px;padding:24px 28px;
+  box-shadow:inset 0 0 60px rgba(0,0,0,.3),0 4px 20px rgba(0,0,0,.3);
+  position:relative;overflow:hidden;
+}
+.remember-card::before{
+  content:'🧠';position:absolute;top:-10px;right:20px;font-size:32px;
+  filter:drop-shadow(0 4px 8px rgba(0,0,0,.4));
+}
+.remember-heading{
+  font-family:'Caveat',cursive;font-size:26px;font-weight:700;
+  color:#fcd34d;margin-bottom:18px;
+  text-shadow:0 0 20px rgba(252,211,77,.3);
+}
+.remember-point{
+  display:flex;gap:12px;align-items:flex-start;
+  opacity:0;transition:opacity .3s ease;
+}
+.remember-point.visible{opacity:1}
+.remember-point-marker{
+  width:8px;height:8px;border-radius:50%;
+  background:#f59e0b;flex-shrink:0;margin-top:9px;
+  box-shadow:0 0 8px #f59e0b;
+}
+.remember-point-text{
+  font-family:'Caveat',cursive;font-size:20px;font-weight:600;
+  color:#fef3c7;line-height:1.5;
+}
+
+/* ── SUMMARY LIST (numbered recap, for 'summary' step type) ── */
+.summary-list{display:flex;flex-direction:column;gap:10px;margin-top:4px}
+.summary-item{display:flex;gap:12px;align-items:flex-start;padding:12px;border-radius:10px;background:rgba(255,255,255,.03);border:1px solid var(--border);opacity:0;transform:translateX(-12px);transition:opacity .35s ease,transform .35s ease}
+.summary-item.visible{opacity:1;transform:translateX(0)}
+.summary-num{font-size:13px;font-weight:800;color:#818cf8;flex-shrink:0;margin-top:2px;width:20px;text-align:center}
+.summary-text{font-size:14px;color:var(--chalk);line-height:1.6;font-family:'Caveat',cursive;font-size:17px}
+
 /* ── BIGGER ARCHITECTURE DIAGRAM (sequential flow style) ── */
 .arch-canvas-wrap-v2{
   position:relative;width:100%;overflow-x:auto;overflow-y:hidden;
@@ -513,7 +552,7 @@ const COLORS=[
   {bg:"rgba(57,211,240,.12)",   border:"#39d3f0",  text:"#39d3f0"},
 ];
 
-const ICONS={title:"🏷",concept:"💡",steps:"📋",example:"⚙️",codefile:"📄",architecture:"🏗",flowdiagram:"🔀",timeline:"⏱",comparison:"⚖️",keypoints:"⭐",chalkboard:"📌"};
+const ICONS={title:"🏷",concept:"💡",steps:"📋",example:"⚙️",codefile:"📄",architecture:"🏗",flowdiagram:"🔀",timeline:"⏱",comparison:"⚖️",keypoints:"⭐",chalkboard:"📌",summary:"📝",remember:"🧠"};
 
 const $=id=>document.getElementById(id);
 function wait(ms){return new Promise(r=>{const t=setTimeout(r,ms/getSpeed());_timers.push(t);})}
@@ -943,6 +982,54 @@ async function renderChalkboard(step){
   await wait(500);
 }
 
+async function renderSummary(step){
+  // Accepts either step.points (array) or step.text (single recap paragraph)
+  const points = step.points && step.points.length ? step.points
+                : (step.text ? [step.text] : []);
+  appendCard(`<div class="step-card">
+    <h2 class="step-heading">${ICONS.summary} ${step.heading||"Summary"}</h2>
+    <div class="summary-list">${points.map((p,i)=>{const text=typeof p==="object"?p.text:p;return `<div class="summary-item" id="sm_${i}"><span class="summary-num">${i+1}.</span><div class="summary-text" id="smT_${i}"></div></div>`;}).join("")}</div>
+  </div>`);
+  await wait(300);
+  for(let i=0;i<points.length;i++){
+    if(paused)return;
+    show(`sm_${i}`);
+    const text=typeof points[i]==="object"?points[i].text:points[i];
+    await wait(100);
+    await typeInto($(`smT_${i}`),text,16);
+    await wait(160);
+  }
+  await wait(500);
+}
+
+async function renderRemember(step){
+  const points = step.points || [];
+  const pointsHTML = points.map((p,i) => {
+    return `<div class="remember-point" id="rm_${i}">
+      <div class="remember-point-marker"></div>
+      <div class="remember-point-text" id="rmText_${i}"></div>
+    </div>`;
+  }).join("");
+
+  appendCard(`<div class="step-card">
+    <div class="remember-card">
+      <div class="remember-heading">🧠 ${step.heading||"Remember This"}</div>
+      <div class="chalk-points">${pointsHTML}</div>
+    </div>
+  </div>`);
+
+  await wait(300);
+  for(let i=0;i<points.length;i++){
+    if(paused)return;
+    const text = typeof points[i] === "object" ? points[i].text : points[i];
+    show(`rm_${i}`);
+    await wait(100);
+    await typeInto($(`rmText_${i}`), text, 20);
+    await wait(250);
+  }
+  await wait(500);
+}
+
 async function renderStep(step){
   switch(step.type){
     case "title":        await renderTitle(step);        break;
@@ -956,6 +1043,8 @@ async function renderStep(step){
     case "comparison":   await renderComparison(step);   break;
     case "chalkboard":   await renderChalkboard(step);   break;
     case "keypoints":    await renderKeypoints(step);    break;
+    case "summary":      await renderSummary(step);      break;
+    case "remember":     await renderRemember(step);     break;
     default:             await renderConcept({...step,definition:step.body||step.text||"",analogy:""}); break;
   }
 }
