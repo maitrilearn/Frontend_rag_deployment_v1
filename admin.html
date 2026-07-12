@@ -64,6 +64,7 @@ body{
   background:var(--gray-50);
   color:var(--gray-900);
   min-height:100vh;
+  overflow-x:hidden;
 }
 
 /* ── NAVBAR ── */
@@ -314,6 +315,11 @@ body{
   .form-row{grid-template-columns:1fr}
   .kb-summary{flex-direction:column}
   .status-bar{flex-direction:column}
+}
+@media(max-width:420px){
+  .nav{padding:0 12px;gap:8px}
+  .nav-page,.nav-sep{display:none}
+  .nav-back{padding:6px 10px;font-size:12px}
 }
 ::-webkit-scrollbar{width:5px}
 ::-webkit-scrollbar-track{background:transparent}
