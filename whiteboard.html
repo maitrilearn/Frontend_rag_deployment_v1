@@ -195,6 +195,12 @@ html,body{height:100%;overflow:hidden;font-family:'DM Sans',sans-serif;backgroun
   display:flex;align-items:center;gap:6px;
   box-shadow:0 2px 12px rgba(16,185,129,.15);
 }
+.rag-badge.warn{
+  background:rgba(245,158,11,.12);
+  border:1px solid rgba(245,158,11,.35);
+  color:#f59e0b;
+  box-shadow:0 2px 12px rgba(245,158,11,.15);
+}
 @keyframes fadeIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
 
 .idle-overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;pointer-events:none;transition:opacity .4s}
@@ -1052,7 +1058,16 @@ window.startLesson=async function(){
     lesson=data.lesson;
     buildStepList(lesson.steps);
     setStatus("TEACHING","teaching");
-    setSpeech(`Starting: ${lesson.title}!`);
+
+    if(data.degraded){
+      setSpeech(`Had trouble building the full lesson on "${lesson.title}" — showing a quick version. Try Start Lesson again for the complete visual lesson.`);
+      const warnBadge=document.createElement("div");
+      warnBadge.className="rag-badge warn";
+      warnBadge.textContent="⚠️ Quick version — click Start Lesson to retry the full lesson";
+      document.body.appendChild(warnBadge);setTimeout(()=>warnBadge.remove(),7000);
+    } else {
+      setSpeech(`Starting: ${lesson.title}!`);
+    }
     // Show citation banner
     const citBanner   = document.getElementById("citationBanner");
     const citFallback = document.getElementById("citationFallback");
