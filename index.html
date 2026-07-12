@@ -1301,7 +1301,14 @@ window.askDoubt = async function(e) {
       document.getElementById("doubtTopic").value
     );
     if (result.error) { err.textContent = result.error; err.classList.add("show"); }
-    else { out.textContent = result.answer; out.classList.add("show"); }
+    else {
+      let html = result.answer.replace(/</g,"&lt;");
+      if (result.rag_used && result.sources && result.sources.length) {
+        html += `<div class="hv-rag-badge">📚 Answered from your notes: ${result.sources.join(", ").replace(/</g,"&lt;")}</div>`;
+      }
+      out.innerHTML = html;
+      out.classList.add("show");
+    }
   } catch(ex) {
     err.textContent = "Could not reach server. Is the backend running?";
     err.classList.add("show");
