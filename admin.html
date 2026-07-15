@@ -106,6 +106,26 @@ body{
 
 /* ── PAGE HEADER ── */
 .page-header{margin-bottom:36px}
+.admin-key-bar{
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  padding:12px 16px;border-radius:var(--r-sm);
+  background:var(--gray-50);border:1px solid var(--gray-200);
+  margin-bottom:24px;
+}
+.ak-label{font-size:13px;font-weight:600;color:var(--gray-700);white-space:nowrap}
+.ak-input{
+  flex:1;min-width:200px;padding:8px 12px;border-radius:8px;
+  border:1px solid var(--gray-300);font-size:13px;font-family:monospace;
+}
+.ak-input:focus{outline:none;border-color:var(--indigo)}
+.ak-save{
+  padding:8px 16px;border-radius:8px;border:none;
+  background:var(--indigo);color:white;font-size:13px;font-weight:600;
+  cursor:pointer;white-space:nowrap;
+}
+.ak-save:hover{background:var(--indigo-600,var(--indigo))}
+.ak-status{font-size:12px;color:var(--gray-500);white-space:nowrap}
+.ak-status.set{color:var(--emerald)}
 .ph-tag{
   display:inline-flex;align-items:center;gap:6px;
   padding:4px 12px;border-radius:20px;
@@ -357,6 +377,14 @@ body{
     <p class="ph-sub">Upload notes for any subject — DevOps, Science, Math, History, Programming. The AI teacher uses your notes when teaching on the whiteboard.</p>
   </div>
 
+  <!-- ADMIN KEY -->
+  <div class="admin-key-bar" id="adminKeyBar">
+    <span class="ak-label">🔑 Admin Key</span>
+    <input type="password" id="adminKeyInput" class="ak-input" placeholder="Paste admin key (only needed if configured on the server)" autocomplete="off">
+    <button class="ak-save" onclick="saveAdminKey()">Save</button>
+    <span class="ak-status" id="adminKeyStatus"></span>
+  </div>
+
   <!-- STATUS BAR -->
   <div class="status-bar" id="statusBar">
     <div class="status-pill">
@@ -524,6 +552,33 @@ body{
 <script>
 const BACKEND = typeof BACKEND_URL !== "undefined" ? BACKEND_URL : "http://localhost:5000";
 
+// ── ADMIN KEY ────────────────────────────────────────────────────────────────
+// Only needed if the server has ADMIN_API_KEY configured (see backend
+// utils/auth.py). Saved locally in this browser so you don't re-enter it
+// every visit — never sent anywhere except as the X-Admin-Key header below.
+function getAdminKey(){ return localStorage.getItem("maitrilearn_admin_key") || ""; }
+
+window.saveAdminKey = function(){
+  const val = document.getElementById("adminKeyInput").value.trim();
+  localStorage.setItem("maitrilearn_admin_key", val);
+  updateAdminKeyStatus();
+};
+
+function updateAdminKeyStatus(){
+  const key = getAdminKey();
+  const statusEl = document.getElementById("adminKeyStatus");
+  const inputEl  = document.getElementById("adminKeyInput");
+  if (key) {
+    statusEl.textContent = "✓ Key saved in this browser";
+    statusEl.classList.add("set");
+    inputEl.value = key;
+  } else {
+    statusEl.textContent = "No key set — only needed if the server requires one";
+    statusEl.classList.remove("set");
+  }
+}
+document.addEventListener("DOMContentLoaded", updateAdminKeyStatus);
+
 function log(elId, msg, type="") {
   const el = document.getElementById(elId);
   const line = type ? `<span class="${type}">${msg}</span>` : msg;
@@ -552,7 +607,7 @@ window.ingestDoc = async function() {
   try {
     const res  = await fetch(`${BACKEND}/rag/ingest`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", "X-Admin-Key": getAdminKey() },
       body: JSON.stringify({ filename, topic, bucket })
     });
     const data = await res.json();
@@ -648,7 +703,7 @@ window.deleteTopic = async function() {
   try {
     const res  = await fetch(`${BACKEND}/rag/delete`, {
       method: "DELETE",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", "X-Admin-Key": getAdminKey() },
       body: JSON.stringify({ topic })
     });
     const data = await res.json();
