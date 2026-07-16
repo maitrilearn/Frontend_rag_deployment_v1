@@ -38,7 +38,10 @@ window.uploadNoteService = async function (file, metadata) {
 
   let ragResult = null;
   try {
-    const ragRes = await fetch(`${backendUrl}/rag/ingest`, {
+    // Uses the public, rate-limited student-notes route — NOT the admin
+    // /rag/ingest route, which now requires an X-Admin-Key that must never
+    // live in frontend JS. See routes/rag.py for details.
+    const ragRes = await fetch(`${backendUrl}/rag/notes/ingest`, {
       method:  "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
