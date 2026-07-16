@@ -40,6 +40,14 @@
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎓</text></svg>">
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
+.skip-link{
+  position:absolute; left:8px; top:-48px;
+  background:#111827; color:#fff; padding:10px 16px;
+  border-radius:8px; z-index:9999; text-decoration:none;
+  font-weight:600; transition:top .15s ease;
+}
+.skip-link:focus{ top:8px; }
+
 /* ── RESET & TOKENS ──────────────────────────────────────────────── */
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -735,8 +743,10 @@ footer{
 </head>
 <body>
 
+<a href="#main-content" class="skip-link">Skip to main content</a>
+
 <!-- NAVBAR -->
-<nav class="nav" id="navbar">
+<nav class="nav" id="navbar" role="navigation" aria-label="Primary">
   <a href="#" class="nav-logo">
     <div class="nav-logo-mark">🎓</div>
     <span class="nav-logo-name">MaitriLearn</span>
@@ -764,6 +774,7 @@ footer{
 </div>
 <div class="nav-mobile-overlay" id="navMobileOverlay"></div>
 
+<main id="main-content">
 <!-- HERO -->
 <section class="hero">
   <div class="hero-grid"></div>
@@ -1080,10 +1091,10 @@ footer{
         <div class="tool-body">
           <div class="tool-form">
             <div class="tf-row">
-              <input class="tf" id="doubtSubject" placeholder="Subject (e.g. Biology, Docker)">
-              <input class="tf" id="doubtTopic"   placeholder="Topic (e.g. Photosynthesis)">
+              <input class="tf" id="doubtSubject" placeholder="Subject (e.g. Biology, Docker)" aria-label="Subject">
+              <input class="tf" id="doubtTopic"   placeholder="Topic (e.g. Photosynthesis)" aria-label="Topic">
             </div>
-            <textarea class="tf" id="doubtQuestion" placeholder="Ask your doubt here..."></textarea>
+            <textarea class="tf" id="doubtQuestion" placeholder="Ask your doubt here..." aria-label="Your question"></textarea>
             <button class="tbtn tbtn-primary" id="doubtBtn" onclick="askDoubt(event)">🤖 Ask AI</button>
             <div class="terror" id="doubtError"></div>
             <div class="toutput" id="doubtOutput"></div>
@@ -1097,13 +1108,13 @@ footer{
           <div class="tool-icon" style="background:var(--violet-50)">🧠</div>
           <div class="tool-meta">
             <div class="tool-name">AI Tutor</div>
-            <div class="tool-desc">Enter a topic and get a structured explanation</div>
+            <div class="tool-desc">Enter a topic for an overview, or ask a specific question to get it answered directly</div>
           </div>
           <div class="tool-chevron">⌄</div>
         </div>
         <div class="tool-body">
           <div class="tool-form">
-            <input class="tf" id="tutorTopic" placeholder="Enter any topic (e.g. Newton's Laws, Docker volumes)">
+            <input class="tf" id="tutorTopic" placeholder="Enter a topic OR a specific question (e.g. 'Docker' or 'What is useState?')" aria-label="Topic or question for the AI Tutor">
             <button class="tbtn tbtn-primary" id="tutorBtn" onclick="runTutor(event)">🧠 Teach Me</button>
             <div class="terror" id="tutorError"></div>
             <div class="toutput" id="tutorOutput"></div>
@@ -1178,6 +1189,8 @@ footer{
 </div>
 
 <!-- FOOTER -->
+</main>
+
 <footer>
   <div class="foot-inner">
     <div class="foot-top">
