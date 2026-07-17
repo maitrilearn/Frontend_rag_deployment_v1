@@ -438,6 +438,7 @@ let historyIndex     = -1;
 let sessionHistory   = [];   // [{cmd, out}] for AI context
 let allChallenges    = {};
 let isRunning        = false;
+let currentCwd       = "/home/student";   // persisted server-issued working directory
 
 // ── INIT ──────────────────────────────────────────────────────────────────────
 async function init() {
@@ -585,7 +586,8 @@ window.runCommand = async function() {
         command:   cmd,
         context:   currentCtx,
         challenge: currentChallenge?.description || "",
-        history:   sessionHistory.slice(-5)
+        history:   sessionHistory.slice(-5),
+        cwd:       currentCwd
       })
     });
 
@@ -594,6 +596,9 @@ window.runCommand = async function() {
     if (data.error) {
       appendOutput("error", "Terminal error: " + data.error);
     } else {
+      // Persist working directory so cd sticks between commands
+      if (data.cwd) currentCwd = data.cwd;
+
       // Show output
       const isError = data.output && (
         data.output.includes("Error") ||
