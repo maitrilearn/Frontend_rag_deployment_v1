@@ -114,7 +114,22 @@ window.generateVoiceTutor = async function () {
       body: JSON.stringify({ prompt })
     });
 
-    if (!res.ok) throw new Error("status_" + res.status);
+    if (!res.ok) {
+      // New: /generate can now fail at the TTS step after already producing
+      // a valid AI answer (tts_failed). Show the text instead of a dead end.
+      const errData = await res.json().catch(() => ({}));
+      if (errData.error === "tts_failed" && errData.text) {
+        if (answerEl) answerEl.textContent = errData.text;
+        if (resultEl) resultEl.classList.add("show");
+        if (status)   { status.className = "vstatus"; status.textContent = ""; }
+        if (errorEl)  {
+          errorEl.textContent = "🎤 Voice playback is temporarily unavailable — showing text answer instead.";
+          errorEl.classList.add("show");
+        }
+        return;
+      }
+      throw new Error("status_" + res.status);
+    }
     const data = await res.json();
     if (data.error) throw new Error(data.error);
 
