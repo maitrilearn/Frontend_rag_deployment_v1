@@ -3,6 +3,22 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
+<!-- QA audit HIGH finding (H-02): "Zero security headers on frontend" (CSP,
+     HSTS, X-Frame-Options, X-Content-Type-Options all absent). This is a
+     static GitHub Pages site — GH Pages does not support custom HTTP
+     response headers, so HSTS, X-Frame-Options, and X-Content-Type-Options
+     genuinely cannot be delivered from here: they're header-only
+     directives, and browsers ignore them (and CSP's frame-ancestors, the
+     modern X-Frame-Options replacement) when set via <meta> — this is by
+     spec, not an oversight. What CAN be set via <meta> is
+     Content-Security-Policy and Referrer-Policy, added below. For the
+     header-only protections, see /_headers in the repo root: it has no
+     effect on plain GitHub Pages, but takes effect automatically at zero
+     cost if this site is ever fronted by Cloudflare or moved to
+     Netlify/Vercel/Cloudflare Pages (all of which natively read a _headers
+     file with no backend changes needed). -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; media-src 'self' https://ttsand-stt.onrender.com https://rairwoyaesgvezxyztnq.supabase.co; connect-src 'self' https://maitrilearn-backend-rag.onrender.com https://ttsand-stt.onrender.com https://rairwoyaesgvezxyztnq.supabase.co https://*.google-analytics.com https://*.analytics.google.com; object-src 'none'; base-uri 'self'; form-action 'self'">
+<meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
 <title>MaitriLearn — Analytics Dashboard</title>
 <meta name="robots" content="noindex, nofollow">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📊</text></svg>">

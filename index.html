@@ -3,6 +3,22 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
+<!-- QA audit HIGH finding (H-02): "Zero security headers on frontend" (CSP,
+     HSTS, X-Frame-Options, X-Content-Type-Options all absent). This is a
+     static GitHub Pages site — GH Pages does not support custom HTTP
+     response headers, so HSTS, X-Frame-Options, and X-Content-Type-Options
+     genuinely cannot be delivered from here: they're header-only
+     directives, and browsers ignore them (and CSP's frame-ancestors, the
+     modern X-Frame-Options replacement) when set via <meta> — this is by
+     spec, not an oversight. What CAN be set via <meta> is
+     Content-Security-Policy and Referrer-Policy, added below. For the
+     header-only protections, see /_headers in the repo root: it has no
+     effect on plain GitHub Pages, but takes effect automatically at zero
+     cost if this site is ever fronted by Cloudflare or moved to
+     Netlify/Vercel/Cloudflare Pages (all of which natively read a _headers
+     file with no backend changes needed). -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; media-src 'self' https://ttsand-stt.onrender.com https://rairwoyaesgvezxyztnq.supabase.co; connect-src 'self' https://maitrilearn-backend-rag.onrender.com https://ttsand-stt.onrender.com https://rairwoyaesgvezxyztnq.supabase.co https://*.google-analytics.com https://*.analytics.google.com; object-src 'none'; base-uri 'self'; form-action 'self'">
+<meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
 <title>MaitriLearn — AI-Powered Learning Platform | Free for Students</title>
   <!-- ── SEO META TAGS ── -->
   <meta name="description" content="Learn any subject with your own AI teacher. Upload your notes, get visual whiteboard lessons, practice DevOps commands, and ask doubts 24/7. Built for students.">
@@ -205,6 +221,14 @@ body{font-family:'Inter',sans-serif;background:var(--white);color:var(--gray-900
   display:grid;grid-template-columns:1fr 1fr;
   gap:64px;align-items:center;position:relative;z-index:1;
 }
+/* QA audit HIGH finding (H-01): "Hero preview card overflows on screens <
+   1024px" / "Hero barely fits" at 1024px. Root cause: CSS Grid items default
+   to min-width:auto, so non-shrinkable content inside .hero-right (badges,
+   the mockup's internal elements) could force that 1fr track wider than its
+   share of the row, pushing the whole grid past the viewport. min-width:0
+   is the standard fix — it lets the track actually shrink to fit instead of
+   being floored by its content's intrinsic width. */
+.hero-left,.hero-right{min-width:0}
 .hero-left{}
 .hero-tag{
   display:inline-flex;align-items:center;gap:8px;
@@ -711,7 +735,13 @@ footer{
 .reveal-delay-3{transition-delay:.3s}
 
 /* ── MOBILE ───────────────────────────────────────────────────────── */
-@media(max-width:900px){
+/* QA audit tested 360px, 768px, and 1024px — all three showed hero overflow
+   or a cramped fit. Previous breakpoint (900px) left 1024px in the
+   two-column layout, which is exactly the "barely fits" case reported.
+   Extended to 1024px so all three problem viewports get the single-column,
+   preview-hidden layout; only genuine desktop (>1024px, audit's 1512px case
+   was "Optimal") gets the two-column hero. */
+@media(max-width:1024px){
   .hero-inner{grid-template-columns:1fr;gap:40px}
   .hero-right{display:none}
   .hero-badge{display:none}
@@ -1335,7 +1365,14 @@ window.runTutor = async function(e) {
   try {
     const result = await tutorAPI(document.getElementById("tutorTopic").value);
     if (result.error) { err.textContent = result.error; err.classList.add("show"); }
-    else { out.textContent = result.answer; out.classList.add("show"); }
+    else {
+      let html = result.answer.replace(/</g,"&lt;");
+      if (result.rag_used && result.sources && result.sources.length) {
+        html += `<div class="hv-rag-badge">📚 Answered from your notes: ${result.sources.join(", ").replace(/</g,"&lt;")}</div>`;
+      }
+      out.innerHTML = html;
+      out.classList.add("show");
+    }
   } catch(ex) {
     err.textContent = "Could not reach server. Is the backend running?";
     err.classList.add("show");

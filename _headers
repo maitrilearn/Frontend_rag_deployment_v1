@@ -1,0 +1,24 @@
+# QA audit HIGH finding (H-02): "Zero security headers on frontend"
+#
+# This file has NO EFFECT on plain GitHub Pages — GH Pages serves files as-is
+# and does not support custom response headers, full stop. It's included so
+# these headers take effect automatically, with no backend changes, the
+# moment this site is either:
+#   (a) fronted by Cloudflare (free tier — Transform Rules / a Worker can
+#       apply these to the GitHub Pages origin), or
+#   (b) moved to a host that reads this file natively: Netlify, Cloudflare
+#       Pages, or Vercel (as vercel.json headers) all support the same
+#       "_headers" convention.
+#
+# The <meta> tags added to each page's <head> (Content-Security-Policy,
+# Referrer-Policy) work today on GitHub Pages as a partial mitigation — but
+# X-Frame-Options, Strict-Transport-Security, X-Content-Type-Options, and
+# CSP's frame-ancestors directive are only meaningful as real HTTP headers,
+# which is what this file provides once hosting supports it.
+
+/*
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; media-src 'self' https://ttsand-stt.onrender.com https://rairwoyaesgvezxyztnq.supabase.co; connect-src 'self' https://maitrilearn-backend-rag.onrender.com https://ttsand-stt.onrender.com https://rairwoyaesgvezxyztnq.supabase.co https://*.google-analytics.com https://*.analytics.google.com; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self'
+  X-Frame-Options: DENY
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
