@@ -1049,6 +1049,52 @@ async function renderStep(step){
   }
 }
 
+// ── VOICE FALLBACK CHAIN ─────────────────────────────────────────────────────
+// Tier 1: Edge TTS (ttsand-stt.onrender.com) — best quality (Neerja voice),
+//         but Microsoft has been blocking this service's requests from
+//         Render's IP with a hard 403, so treat it as "may be down".
+// Tier 2: Browser speechSynthesis (Web Speech API) — runs entirely
+//         client-side, can't be blocked server-side, but voice quality/
+//         availability depends on the student's device and won't match
+//         Neerja. Used automatically whenever Tier 1 fails.
+// Tier 3: Azure AI Speech — planned, not implemented yet. Would replace
+//         Tier 1 with a real authenticated API instead of the unofficial
+//         edge-tts trick, once set up.
+let _browserVoice = null;
+function _pickBrowserVoice(){
+  if(_browserVoice) return _browserVoice;
+  const voices = window.speechSynthesis ? window.speechSynthesis.getVoices() : [];
+  _browserVoice = voices.find(v=>v.lang==="en-IN")
+               || voices.find(v=>v.lang && v.lang.startsWith("en-IN"))
+               || voices.find(v=>v.lang && v.lang.startsWith("en"))
+               || voices[0] || null;
+  return _browserVoice;
+}
+if(window.speechSynthesis){
+  // Voice list loads async in some browsers — refresh our cached pick once it's ready.
+  window.speechSynthesis.onvoiceschanged = ()=>{ _browserVoice = null; };
+}
+
+function speakWithBrowserTTS(text, speed, done){
+  if(!window.speechSynthesis || !text){ done(); return; }
+  try{
+    window.speechSynthesis.cancel(); // stop anything already queued
+    const utter = new SpeechSynthesisUtterance(text);
+    const voice = _pickBrowserVoice();
+    if(voice) utter.voice = voice;
+    utter.rate = Math.min(Math.max(speed || 1, 0.5), 2);
+    utter.onend   = done;
+    utter.onerror = done;
+    // Keep the existing pause/stop controls (clearAllTimers calls
+    // currentAudio.pause()) working for the browser-voice case too.
+    currentAudio = { pause: ()=>window.speechSynthesis.cancel() };
+    window.speechSynthesis.speak(utter);
+  }catch(e){
+    console.warn("[voice] browser TTS fallback failed:", e.message);
+    done();
+  }
+}
+
 // ── NARRATION ─────────────────────────────────────────────────────────────────
 function narrate(text){
   return new Promise(resolve=>{
@@ -1060,13 +1106,13 @@ function narrate(text){
 
     // BUG FIX: ngrok-skip-browser-warning header needed for mobile —
     // without it, ngrok shows an interception page instead of JSON/audio
-    fetch(`${VOICE}/tts`,{
+    fetch(`${VOICE}/generate`,{
       method:"POST",
       headers:{
         "Content-Type":"application/json",
         "ngrok-skip-browser-warning":"true"
       },
-      body:JSON.stringify({text:text})
+      body:JSON.stringify({prompt:text})
     })
     .then(r=>{if(!r.ok)throw new Error(r.status);return r.json();})
     .then(async data=>{
@@ -1086,13 +1132,24 @@ function narrate(text){
         audio.playbackRate=speed;
         audio.onended=()=>{setTalking(false);currentAudio=null;URL.revokeObjectURL(blobUrl);resolve();};
         audio.onerror=()=>{setTalking(false);currentAudio=null;URL.revokeObjectURL(blobUrl);resolve();};
-        audio.play().catch(()=>{setTalking(false);resolve();});
+        audio.play().catch(()=>{
+          // Tier 1 got audio but the browser couldn't play it — fall through to Tier 2.
+          console.warn("[voice] Edge TTS audio failed to play, falling back to browser voice");
+          speakWithBrowserTTS(text, speed, ()=>{setTalking(false);resolve();});
+        });
       }catch(audioErr){
-        console.warn("[voice] audio blob fetch failed:",audioErr.message);
-        setTalking(false);resolve();
+        // Tier 1 audio fetch failed (e.g. edge-tts returned a 503 — see
+        // ttsand-stt server.py) — fall through to Tier 2.
+        console.warn("[voice] Edge TTS unavailable ("+audioErr.message+"), falling back to browser voice");
+        speakWithBrowserTTS(text, speed, ()=>{setTalking(false);resolve();});
       }
     })
-    .catch(()=>{_timers.push(setTimeout(()=>{setTalking(false);resolve();},fallback));});
+    .catch(()=>{
+      // Tier 1 completely unreachable or non-200 (e.g. the 403 Microsoft is
+      // currently returning for edge-tts on this host) — fall through to Tier 2.
+      console.warn("[voice] Edge TTS request failed, falling back to browser voice");
+      speakWithBrowserTTS(text, speed, ()=>{setTalking(false);resolve();});
+    });
   });
 }
 
