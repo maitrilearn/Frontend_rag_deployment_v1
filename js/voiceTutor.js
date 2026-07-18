@@ -2,11 +2,18 @@
  * MaitriLearn Voice Tutor
  * STT: Web Speech API (browser built-in, free, no server)
  * TTS: 3-tier fallback chain —
- *   Tier 1: Edge TTS on VPS (Indian English, best quality — "Neerja")
- *   Tier 2: Browser speechSynthesis (Web Speech API, client-side, always
- *           available but lower/inconsistent quality — used automatically
- *           whenever Tier 1 fails, e.g. the current Microsoft 403 block)
- *   Tier 3: Azure AI Speech — planned, not implemented yet
+ *   Tier 1: Edge TTS on the voice service (Indian English, best quality —
+ *           "Neerja"). Microsoft has intermittently blocked this from
+ *           Render's IP, so it's treated as "may be down".
+ *   Tier 2: Google Translate TTS free tier (gTTS), server-side, Indian
+ *           English accent. The backend automatically retries with this
+ *           whenever Edge TTS fails (see generate_speech() in
+ *           ttsand-stt/server.py) — invisible here except that a
+ *           successful response's data.engine will read "edge" or "gtts".
+ *   Tier 3: Browser speechSynthesis (Web Speech API), fully client-side,
+ *           always available but lower/inconsistent quality. Used only
+ *           when /generate returns a non-200 (both server tiers failed)
+ *           or the returned audio fails to fetch/play.
  */
 
 // ── Browser TTS fallback (Tier 2) ───────────────────────────────────────────
@@ -172,6 +179,7 @@ window.generateVoiceTutor = async function () {
     }
     const data = await res.json();
     if (data.error) throw new Error(data.error);
+    if (data.engine) console.log(`[voice] Tier ${data.engine === "edge" ? 1 : 2} served this audio (${data.engine})`);
 
     if (answerEl) answerEl.textContent = data.text;
     if (status)   { status.className = "vstatus playing"; status.textContent = "Playing... 🔊"; }
