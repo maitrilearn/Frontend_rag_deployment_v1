@@ -27,21 +27,24 @@ async function fetchWithRetry(url, options, maxRetries = 2) {
   throw lastError || new Error("Request failed after retries");
 }
 
+// BUG FIX (QA audit follow-up): fetchWithRetry was defined above but never
+// actually called anywhere — askDoubtAPI/tutorAPI/feedbackAPI were all using
+// plain fetch(), so the exact endpoints most likely to 503 under concurrent
+// load (/ask, /tutor) had zero retry protection on the main index.html path.
+// whiteboard.html has its own separate inline retry logic and was fine;
+// this file was the gap. All three now route through fetchWithRetry.
 window.askDoubtAPI = async function (
   question,
   subject,
   topic
 ) {
-
-  const response = await fetch(
+  const { data } = await fetchWithRetry(
     `${BACKEND_URL}/ask`,
     {
       method: "POST",
-
       headers: {
         "Content-Type": "application/json"
       },
-
       body: JSON.stringify({
         question,
         subject,
@@ -50,49 +53,43 @@ window.askDoubtAPI = async function (
     }
   );
 
-  return await response.json();
+  return data;
 };
 
 
 
 window.tutorAPI = async function (topic) {
-
-  const response = await fetch(
+  const { data } = await fetchWithRetry(
     `${BACKEND_URL}/tutor`,
     {
       method: "POST",
-
       headers: {
         "Content-Type": "application/json"
       },
-
       body: JSON.stringify({
         topic
       })
     }
   );
 
-  return await response.json();
+  return data;
 };
 
 
 
 window.feedbackAPI = async function (feedback) {
-
-  const response = await fetch(
+  const { data } = await fetchWithRetry(
     `${BACKEND_URL}/feedback`,
     {
       method: "POST",
-
       headers: {
         "Content-Type": "application/json"
       },
-
       body: JSON.stringify({
         feedback
       })
     }
   );
 
-  return await response.json();
+  return data;
 };
