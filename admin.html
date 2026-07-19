@@ -393,11 +393,12 @@ body{
     <p class="ph-sub">Upload notes for any subject — DevOps, Science, Math, History, Programming. The AI teacher uses your notes when teaching on the whiteboard.</p>
   </div>
 
-  <!-- ADMIN KEY -->
+  <!-- ADMIN LOGIN -->
   <div class="admin-key-bar" id="adminKeyBar">
     <span class="ak-label">🔑 Admin Key</span>
     <input type="password" id="adminKeyInput" class="ak-input" placeholder="Paste admin key (only needed if configured on the server)" autocomplete="off">
-    <button class="ak-save" onclick="saveAdminKey()">Save</button>
+    <button class="ak-save" onclick="adminLogin()">Sign in</button>
+    <button class="ak-save" onclick="adminLogout()" style="background:transparent;border:1px solid rgba(255,255,255,.15)">Sign out</button>
     <span class="ak-status" id="adminKeyStatus"></span>
   </div>
 
@@ -568,32 +569,79 @@ body{
 <script>
 const BACKEND = typeof BACKEND_URL !== "undefined" ? BACKEND_URL : "http://localhost:5000";
 
-// ── ADMIN KEY ────────────────────────────────────────────────────────────────
-// Only needed if the server has ADMIN_API_KEY configured (see backend
-// utils/auth.py). Saved locally in this browser so you don't re-enter it
-// every visit — never sent anywhere except as the X-Admin-Key header below.
-function getAdminKey(){ return localStorage.getItem("maitrilearn_admin_key") || ""; }
+// ── ADMIN LOGIN (session cookie, not localStorage) ─────────────────────────
+// Post-audit fix (finding H-04): the raw admin key used to be saved to
+// localStorage and re-sent as X-Admin-Key on every request forever — any
+// XSS on this page, or anyone with access to this browser, could read it
+// straight out and had a permanent admin credential. Now the key is typed
+// once, POSTed to /admin/login, and the browser gets back a short-lived
+// (12h) HttpOnly session cookie instead. HttpOnly means JS can never read
+// it back out again, even if this page were compromised. The raw key is
+// never written to localStorage/sessionStorage and is discarded from JS
+// memory the moment the login request completes.
+//
+// All admin fetches below use credentials:"include" so the browser attaches
+// that cookie automatically — no header, no stored secret to steal.
 
-window.saveAdminKey = function(){
-  const val = document.getElementById("adminKeyInput").value.trim();
-  localStorage.setItem("maitrilearn_admin_key", val);
-  updateAdminKeyStatus();
+window.adminLogin = async function(){
+  const input    = document.getElementById("adminKeyInput");
+  const key      = input.value.trim();
+  const statusEl = document.getElementById("adminKeyStatus");
+
+  if (!key) { statusEl.textContent = "Enter your admin key first"; statusEl.classList.remove("set"); return; }
+
+  statusEl.textContent = "Signing in…";
+  try {
+    const res  = await fetch(`${BACKEND}/admin/login`, {
+      method:      "POST",
+      credentials: "include",
+      headers:     { "Content-Type": "application/json" },
+      body:        JSON.stringify({ key })
+    });
+    const data = await res.json();
+    input.value = "";                 // never keep the raw key around once sent
+
+    if (res.ok && data.success) {
+      statusEl.textContent = "✓ Signed in for this session (12h)";
+      statusEl.classList.add("set");
+      document.getElementById("adminKeyInput").placeholder = "Signed in ✓ — re-enter key to switch admin";
+      loadTopics();
+    } else {
+      statusEl.textContent = `✗ ${data.error || "Sign-in failed"}`;
+      statusEl.classList.remove("set");
+    }
+  } catch(e) {
+    statusEl.textContent = `✗ ${e.message} — is backend running?`;
+    statusEl.classList.remove("set");
+  }
 };
 
-function updateAdminKeyStatus(){
-  const key = getAdminKey();
+window.adminLogout = async function(){
+  await fetch(`${BACKEND}/admin/logout`, { method: "POST", credentials: "include" });
+  document.getElementById("adminKeyStatus").textContent = "Signed out";
+  document.getElementById("adminKeyStatus").classList.remove("set");
+};
+
+// Silent check on load: is there already a valid session cookie from
+// earlier this browser session? Avoids re-prompting for the key every
+// page load within the 12h window.
+async function checkAdminSession(){
   const statusEl = document.getElementById("adminKeyStatus");
-  const inputEl  = document.getElementById("adminKeyInput");
-  if (key) {
-    statusEl.textContent = "✓ Key saved in this browser";
-    statusEl.classList.add("set");
-    inputEl.value = key;
-  } else {
-    statusEl.textContent = "No key set — only needed if the server requires one";
+  try {
+    const res = await fetch(`${BACKEND}/admin/session`, { credentials: "include" });
+    if (res.ok) {
+      statusEl.textContent = "✓ Signed in for this session";
+      statusEl.classList.add("set");
+    } else {
+      statusEl.textContent = "Not signed in — enter admin key to manage the knowledge base";
+      statusEl.classList.remove("set");
+    }
+  } catch {
+    statusEl.textContent = "Not signed in — enter admin key to manage the knowledge base";
     statusEl.classList.remove("set");
   }
 }
-document.addEventListener("DOMContentLoaded", updateAdminKeyStatus);
+document.addEventListener("DOMContentLoaded", checkAdminSession);
 
 function log(elId, msg, type="") {
   const el = document.getElementById(elId);
@@ -622,9 +670,10 @@ window.ingestDoc = async function() {
 
   try {
     const res  = await fetch(`${BACKEND}/rag/ingest`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "X-Admin-Key": getAdminKey() },
-      body: JSON.stringify({ filename, topic, bucket })
+      method:      "POST",
+      credentials: "include",
+      headers:     { "Content-Type": "application/json" },
+      body:        JSON.stringify({ filename, topic, bucket })
     });
     const data = await res.json();
     if (data.error) {
@@ -718,9 +767,10 @@ window.deleteTopic = async function() {
   clearLog("deleteLog", `Deleting all chunks for "${topic}"...`);
   try {
     const res  = await fetch(`${BACKEND}/rag/delete`, {
-      method: "DELETE",
-      headers: { "Content-Type": "application/json", "X-Admin-Key": getAdminKey() },
-      body: JSON.stringify({ topic })
+      method:      "DELETE",
+      credentials: "include",
+      headers:     { "Content-Type": "application/json" },
+      body:        JSON.stringify({ topic })
     });
     const data = await res.json();
     if (data.error) {
