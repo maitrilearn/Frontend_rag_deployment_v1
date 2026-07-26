@@ -213,10 +213,29 @@ window.generateVoiceTutor = async function () {
     if (player) {
       player.src     = blobUrl;
       player.onended = () => URL.revokeObjectURL(blobUrl);
-      await player.play();
+      try {
+        await player.play();
+        if (status) { status.className = "vstatus done"; status.textContent = "Done ✅"; }
+      } catch (playErr) {
+        // BUG FIX (2026-07-26): Tier 1 audio was fetched successfully but the
+        // <audio> element couldn't play it ("no supported source" etc.) —
+        // this rejection wasn't caught before, so it fell through to the
+        // outer catch and surfaced the raw browser error instead of falling
+        // back to Tier 3, same pattern whiteboard.html already handles.
+        console.warn("[voice] Edge TTS audio failed to play, falling back to browser voice:", playErr.message);
+        URL.revokeObjectURL(blobUrl);
+        if (status)  { status.className = "vstatus playing"; status.textContent = "Playing (backup voice)... 🔊"; }
+        if (errorEl) {
+          errorEl.textContent = "🎤 Neerja voice is temporarily unavailable — using your device's voice instead.";
+          errorEl.classList.add("show");
+        }
+        speakWithBrowserTTS(data.text, () => {
+          if (status) { status.className = "vstatus done"; status.textContent = "Done ✅"; }
+        });
+      }
+    } else {
+      if (status) { status.className = "vstatus done"; status.textContent = "Done ✅"; }
     }
-
-    if (status) { status.className = "vstatus done"; status.textContent = "Done ✅"; }
 
   } catch (error) {
     if (status) { status.className = "vstatus"; status.textContent = ""; }
