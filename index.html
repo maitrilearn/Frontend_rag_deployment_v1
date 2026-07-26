@@ -603,6 +603,17 @@ textarea.tf{resize:vertical;min-height:90px;line-height:1.6}
   color:var(--rose);font-size:13px;display:none;
 }
 .terror.show{display:block}
+/* BUG FIX (2026-07-26, H3): feedback success previously used window.alert(),
+   which is a blocking native dialog — easy to miss, gets suppressed by some
+   browsers/automation, and doesn't match the site's visual style. This is
+   an inline toast styled like .terror but in the emerald "success" palette
+   already used elsewhere (.vstatus.done etc.) */
+.tsuccess{
+  padding:10px 14px;border-radius:var(--r-sm);
+  background:var(--emerald-50);border:1px solid #a7f3d0;
+  color:var(--emerald);font-size:13px;display:none;
+}
+.tsuccess.show{display:block}
 .tsep{border:none;border-top:1px solid var(--gray-100);margin:4px 0}
 .tlabel{font-size:12px;font-weight:600;color:var(--gray-500);letter-spacing:.3px;margin-bottom:-4px}
 .notes-list-wrap{display:flex;flex-direction:column;gap:8px;margin-top:6px}
@@ -1198,6 +1209,7 @@ footer{
             <textarea class="tf" id="feedbackText" placeholder="Your feedback, suggestions or bug reports..."></textarea>
             <button class="tbtn tbtn-primary" id="feedbackBtn" onclick="submitFeedback(event)">💬 Send Feedback</button>
             <div class="terror" id="feedbackError"></div>
+            <div class="tsuccess" id="feedbackSuccess"></div>
           </div>
         </div>
       </div>
@@ -1384,12 +1396,20 @@ window.runTutor = async function(e) {
 window.submitFeedback = async function(e) {
   const btn = e.target;
   const err = document.getElementById("feedbackError");
+  const ok  = document.getElementById("feedbackSuccess");
   btn.disabled = true; btn.textContent = "Sending...";
   err.className = "terror";
+  ok.className  = "tsuccess";
   try {
     await feedbackAPI(document.getElementById("feedbackText").value);
-    alert("✅ Feedback sent! Thank you.");
+    // BUG FIX (2026-07-26, H3): was alert("✅ Feedback sent! Thank you.") —
+    // a blocking native dialog is easy to miss/dismiss accidentally and
+    // isn't visible to automated checks. Now shows an inline toast instead,
+    // matching how errors are already surfaced on this form.
+    ok.textContent = "✅ Feedback sent! Thank you.";
+    ok.classList.add("show");
     document.getElementById("feedbackText").value = "";
+    setTimeout(() => ok.classList.remove("show"), 4000);
   } catch(ex) {
     err.textContent = "Failed to send feedback. Please try again.";
     err.classList.add("show");
