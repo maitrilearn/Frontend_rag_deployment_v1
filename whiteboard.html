@@ -1106,13 +1106,22 @@ function narrate(text){
 
     // BUG FIX: ngrok-skip-browser-warning header needed for mobile —
     // without it, ngrok shows an interception page instead of JSON/audio
-    fetch(`${VOICE}/generate`,{
+    //
+    // BUG FIX (2026-07-26): was calling /generate here, which runs the
+    // text through the LLM again (ask_teacher()) before doing TTS. That's
+    // correct for the Voice Tutor Q&A widget (raw student question -> needs
+    // an AI answer), but wrong here — `text` is already the final narration
+    // script the whiteboard wrote, so re-running it through the LLM just
+    // adds ~seconds of latency and can rewrite/paraphrase the script with
+    // conversational filler. /tts skips the LLM entirely and speaks the
+    // text as-is.
+    fetch(`${VOICE}/tts`,{
       method:"POST",
       headers:{
         "Content-Type":"application/json",
         "ngrok-skip-browser-warning":"true"
       },
-      body:JSON.stringify({prompt:text})
+      body:JSON.stringify({text:text})
     })
     .then(r=>{if(!r.ok)throw new Error(r.status);return r.json();})
     .then(async data=>{
