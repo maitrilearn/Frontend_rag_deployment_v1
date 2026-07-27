@@ -1061,6 +1061,9 @@ async function renderStep(step){
 //         Tier 1 with a real authenticated API instead of the unofficial
 //         edge-tts trick, once set up.
 let _browserVoice = null;
+// Holds a strong reference to the currently-speaking utterance so Chrome's
+// GC can't reclaim it mid-speech — see BUG FIX note in speakWithBrowserTTS().
+let _currentUtterance = null;
 function _pickBrowserVoice(){
   if(_browserVoice) return _browserVoice;
   const voices = window.speechSynthesis ? window.speechSynthesis.getVoices() : [];
@@ -1083,11 +1086,38 @@ function speakWithBrowserTTS(text, speed, done){
     const voice = _pickBrowserVoice();
     if(voice) utter.voice = voice;
     utter.rate = Math.min(Math.max(speed || 1, 0.5), 2);
-    utter.onend   = done;
-    utter.onerror = done;
+
+    // BUG FIX (2026-07-28): "browser voice reads only a few words then stops"
+    // is two stacked, well-documented Chrome speechSynthesis bugs, not one:
+    //
+    // 1. GC bug — `utter` was a local variable with no strong reference held
+    //    anywhere once speak() was called. Chrome's V8 can (and does) garbage
+    //    collect the utterance mid-speech, silently cutting it off after just
+    //    a few words. Fixed by keeping it in a module-level variable
+    //    (_currentUtterance) for the duration of playback.
+    // 2. Network-voice timeout bug — Chrome's built-in "Google ..." voices
+    //    (what people usually mean by "Google TTS" in the browser) are
+    //    network-backed and have an internal ~15s idle/keepalive timeout;
+    //    long text silently stops partway through. The standard workaround
+    //    is to periodically call pause()+resume() while speaking, which
+    //    resets that internal timer without audibly interrupting playback.
+    _currentUtterance = utter;
+    let keepAliveTimer = null;
+    const stopKeepAlive = () => { if (keepAliveTimer) { clearInterval(keepAliveTimer); keepAliveTimer = null; } };
+
+    utter.onstart = () => {
+      keepAliveTimer = setInterval(() => {
+        if (!window.speechSynthesis.speaking) { stopKeepAlive(); return; }
+        window.speechSynthesis.pause();
+        window.speechSynthesis.resume();
+      }, 10000); // well under the ~15s bug threshold
+    };
+    utter.onend = () => { stopKeepAlive(); _currentUtterance = null; done(); };
+    utter.onerror = () => { stopKeepAlive(); _currentUtterance = null; done(); };
+
     // Keep the existing pause/stop controls (clearAllTimers calls
     // currentAudio.pause()) working for the browser-voice case too.
-    currentAudio = { pause: ()=>window.speechSynthesis.cancel() };
+    currentAudio = { pause: ()=>{ stopKeepAlive(); window.speechSynthesis.cancel(); } };
     window.speechSynthesis.speak(utter);
   }catch(e){
     console.warn("[voice] browser TTS fallback failed:", e.message);
