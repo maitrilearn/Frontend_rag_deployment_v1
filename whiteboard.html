@@ -1078,47 +1078,75 @@ if(window.speechSynthesis){
   window.speechSynthesis.onvoiceschanged = ()=>{ _browserVoice = null; };
 }
 
+// Splits text into small word-groups for speakWithBrowserTTS — see the bug
+// note below for why this needs to be this small.
+function splitForBrowserTTS(text){
+  const words=(text||"").split(/\s+/).filter(Boolean);
+  const pieces=[];let cur=[];
+  for(const w of words){
+    cur.push(w);
+    if(cur.join(" ").length>=28){pieces.push(cur.join(" "));cur=[];}
+  }
+  if(cur.length) pieces.push(cur.join(" "));
+  return pieces.length?pieces:[text];
+}
+
 function speakWithBrowserTTS(text, speed, done){
   if(!window.speechSynthesis || !text){ done(); return; }
   try{
     window.speechSynthesis.cancel(); // stop anything already queued
-    const utter = new SpeechSynthesisUtterance(text);
     const voice = _pickBrowserVoice();
-    if(voice) utter.voice = voice;
-    utter.rate = Math.min(Math.max(speed || 1, 0.5), 2);
 
-    // BUG FIX (2026-07-28): "browser voice reads only a few words then stops"
-    // is two stacked, well-documented Chrome speechSynthesis bugs, not one:
-    //
-    // 1. GC bug — `utter` was a local variable with no strong reference held
-    //    anywhere once speak() was called. Chrome's V8 can (and does) garbage
-    //    collect the utterance mid-speech, silently cutting it off after just
-    //    a few words. Fixed by keeping it in a module-level variable
-    //    (_currentUtterance) for the duration of playback.
-    // 2. Network-voice timeout bug — Chrome's built-in "Google ..." voices
-    //    (what people usually mean by "Google TTS" in the browser) are
-    //    network-backed and have an internal ~15s idle/keepalive timeout;
-    //    long text silently stops partway through. The standard workaround
-    //    is to periodically call pause()+resume() while speaking, which
-    //    resets that internal timer without audibly interrupting playback.
-    _currentUtterance = utter;
+    // BUG FIX (2026-08-02): "browser voice reads only the first 3-4 words
+    // then stops" is a THIRD, separate Chrome bug from the two already
+    // handled below (GC + 15s network-voice timeout) — Android Chrome (and
+    // some other Chromium mobile builds) silently truncates a single long
+    // SpeechSynthesisUtterance after roughly 32 characters. It doesn't
+    // error, it doesn't fire a slow onend — it just stops producing sound
+    // partway through, every time, regardless of how long the text is.
+    // Sentence-level chunking (see splitIntoChunks in narrate()) doesn't
+    // help here because even one sentence is normally well over 32 chars.
+    // The standard workaround is to never hand the browser one long
+    // utterance at all: split into small word-groups and queue them as
+    // SEPARATE utterances via chained speak() calls (no cancel() between
+    // them), which Chrome plays back-to-back with no audible gap.
+    const pieces = splitForBrowserTTS(text);
+    let i = 0;
     let keepAliveTimer = null;
     const stopKeepAlive = () => { if (keepAliveTimer) { clearInterval(keepAliveTimer); keepAliveTimer = null; } };
 
-    utter.onstart = () => {
-      keepAliveTimer = setInterval(() => {
-        if (!window.speechSynthesis.speaking) { stopKeepAlive(); return; }
-        window.speechSynthesis.pause();
-        window.speechSynthesis.resume();
-      }, 10000); // well under the ~15s bug threshold
+    const speakNext = () => {
+      if(i >= pieces.length){ stopKeepAlive(); _currentUtterance=null; done(); return; }
+      const utter = new SpeechSynthesisUtterance(pieces[i]);
+      if(voice) utter.voice = voice;
+      utter.rate = Math.min(Math.max(speed || 1, 0.5), 2);
+
+      // BUG FIX (2026-07-28): GC bug — hold a strong module-level reference
+      // to the utterance for the duration of playback, or V8 can garbage
+      // collect it mid-speech and silently cut it off.
+      _currentUtterance = utter;
+
+      utter.onstart = () => {
+        if(!keepAliveTimer){
+          // BUG FIX (2026-07-28): network-voice (~15s) idle timeout — reset
+          // it periodically with a silent pause()+resume() so long lessons
+          // don't get cut off partway through.
+          keepAliveTimer = setInterval(() => {
+            if (!window.speechSynthesis.speaking) { stopKeepAlive(); return; }
+            window.speechSynthesis.pause();
+            window.speechSynthesis.resume();
+          }, 10000);
+        }
+      };
+      utter.onend = () => { i++; speakNext(); };
+      utter.onerror = () => { i++; speakNext(); };
+      window.speechSynthesis.speak(utter);
     };
-    utter.onend = () => { stopKeepAlive(); _currentUtterance = null; done(); };
-    utter.onerror = () => { stopKeepAlive(); _currentUtterance = null; done(); };
 
     // Keep the existing pause/stop controls (clearAllTimers calls
     // currentAudio.pause()) working for the browser-voice case too.
-    currentAudio = { pause: ()=>{ stopKeepAlive(); window.speechSynthesis.cancel(); } };
-    window.speechSynthesis.speak(utter);
+    currentAudio = { pause: ()=>{ stopKeepAlive(); i = pieces.length; window.speechSynthesis.cancel(); } };
+    speakNext();
   }catch(e){
     console.warn("[voice] browser TTS fallback failed:", e.message);
     done();
