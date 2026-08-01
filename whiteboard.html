@@ -1126,6 +1126,19 @@ function speakWithBrowserTTS(text, speed, done){
 }
 
 // ── NARRATION ─────────────────────────────────────────────────────────────────
+// Circuit breaker for the server-side TTS call (/tts). Server logs show
+// Edge TTS is currently being 403'd by Microsoft from this host's IP, and
+// while server.py falls back to gTTS internally, a couple of consecutive
+// full failures (both edge_tts AND gTTS down, or the endpoint unreachable)
+// mean it's very unlikely to start working again mid-lesson. Waiting out a
+// fresh network request every single step before falling back to browser
+// voice adds latency to every step and makes the pacing feel even more
+// broken. Once we've seen it fail this many times in a row, skip straight
+// to browser speechSynthesis for the rest of the session — a success
+// resets the counter, so it's not a permanent one-way trip.
+let _ttsFailStreak=0;
+const TTS_FAIL_STREAK_LIMIT=2;
+
 function narrate(text){
   return new Promise(resolve=>{
     setSpeech(text);setTalking(true);
@@ -1133,6 +1146,11 @@ function narrate(text){
     const fallback=Math.min(Math.max((text.length*55)/speed,2500),10000);
     const useVoice=$("voiceToggle")&&$("voiceToggle").checked;
     if(!useVoice){_timers.push(setTimeout(()=>{setTalking(false);resolve();},fallback));return;}
+    if(_ttsFailStreak>=TTS_FAIL_STREAK_LIMIT){
+      console.warn("[voice] Skipping /tts — failed "+_ttsFailStreak+" times in a row, using browser voice directly");
+      speakWithBrowserTTS(text,speed,()=>{setTalking(false);resolve();});
+      return;
+    }
 
     // BUG FIX: ngrok-skip-browser-warning header needed for mobile —
     // without it, ngrok shows an interception page instead of JSON/audio
@@ -1167,6 +1185,7 @@ function narrate(text){
         const blob = await audioRes.blob();
         const blobUrl = URL.createObjectURL(blob);
 
+        _ttsFailStreak=0; // server gave us valid audio — reset the breaker
         const audio=new Audio(blobUrl);currentAudio=audio;
         audio.playbackRate=speed;
         audio.onended=()=>{setTalking(false);currentAudio=null;URL.revokeObjectURL(blobUrl);resolve();};
@@ -1179,14 +1198,16 @@ function narrate(text){
       }catch(audioErr){
         // Tier 1 audio fetch failed (e.g. edge-tts returned a 503 — see
         // ttsand-stt server.py) — fall through to Tier 2.
-        console.warn("[voice] Edge TTS unavailable ("+audioErr.message+"), falling back to browser voice");
+        _ttsFailStreak++;
+        console.warn("[voice] Edge TTS unavailable ("+audioErr.message+"), falling back to browser voice ("+_ttsFailStreak+" fail(s) in a row)");
         speakWithBrowserTTS(text, speed, ()=>{setTalking(false);resolve();});
       }
     })
     .catch(()=>{
       // Tier 1 completely unreachable or non-200 (e.g. the 403 Microsoft is
       // currently returning for edge-tts on this host) — fall through to Tier 2.
-      console.warn("[voice] Edge TTS request failed, falling back to browser voice");
+      _ttsFailStreak++;
+      console.warn("[voice] Edge TTS request failed, falling back to browser voice ("+_ttsFailStreak+" fail(s) in a row)");
       speakWithBrowserTTS(text, speed, ()=>{setTalking(false);resolve();});
     });
   });
@@ -1201,8 +1222,19 @@ async function runStep(index){
   if(paused)return;
   stepIndex=index;markStep(index,"active");
   const step=lesson.steps[index];
-  await renderStep(step);if(paused)return;
-  await narrate(step.narration||step.heading||step.text||"");if(paused)return;
+  const narrationText=step.narration||step.heading||step.text||"";
+  // BUG FIX: text and voice were completely out of sync — the board used to
+  // finish typing everything FIRST (await renderStep), and only THEN did
+  // narration start (await narrate), as two sequential phases. That meant
+  // by the time the voice began, the full step was already sitting on
+  // screen, and the voice (often a much shorter narration string than the
+  // on-screen content) would play briefly and cut the step short relative
+  // to what was visible — this is what produced "steps flying by, voice
+  // just says one or two words". Running them together means the voice
+  // starts as soon as the board starts drawing, and the step doesn't
+  // advance until BOTH the drawing animation and the narration audio have
+  // actually finished.
+  await Promise.all([renderStep(step),narrate(narrationText)]);if(paused)return;
   markStep(index,"done");await wait(350);runStep(index+1);
 }
 
@@ -1310,3 +1342,4 @@ window.addEventListener("DOMContentLoaded",()=>{
   <script src="js/analytics.js"></script>
 </body>
 </html>
+
