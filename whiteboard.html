@@ -1139,78 +1139,167 @@ function speakWithBrowserTTS(text, speed, done){
 let _ttsFailStreak=0;
 const TTS_FAIL_STREAK_LIMIT=2;
 
-function narrate(text){
+// BUG FIX (2026-08-01): the real cause of "voice only says 5-6 words per
+// step" — narrate() was only ever speaking step.narration, a SEPARATE field
+// the lesson-generation LLM writes independently from the actual visible
+// content (definition/points/node descriptions/etc). In practice that field
+// often comes back as a short caption ("In this architecture...") rather than
+// full teaching speech — the model treats it as a label, not a script — while
+// the real substance lives in the fields that get typed onto the board.
+// composeNarration() builds what gets SPOKEN directly from the same data that
+// gets RENDERED, so the voice can never be shorter than what's on screen, and
+// the two can never drift out of sync content-wise.
+function composeNarration(step){
+  const parts=[];
+  const intro=(step.narration||"").trim();
+  if(intro) parts.push(intro);
+
+  switch(step.type){
+    case "title":
+      if(step.subtitle) parts.push(step.subtitle);
+      break;
+    case "concept":
+      if(step.definition) parts.push(step.definition);
+      if(step.analogy) parts.push("Think of it like this: "+step.analogy);
+      break;
+    case "steps":
+      (step.items||[]).forEach((item,i)=>{
+        parts.push(`Step ${i+1}: ${item.step}.`+(item.detail?" "+item.detail:""));
+      });
+      break;
+    case "example":
+      if(step.scenario) parts.push(step.scenario);
+      if(step.explanation) parts.push(step.explanation);
+      break;
+    case "codefile":
+      if(step.description) parts.push(step.description);
+      if(step.explanation) parts.push(step.explanation);
+      break;
+    case "architecture":{
+      const nodes=step.nodes||[];
+      nodes.forEach(n=>{
+        const line=`${n.label}: ${n.description||""}`.trim();
+        if(line) parts.push(line);
+      });
+      (step.connections||[]).forEach(c=>{
+        if(!c.label) return;
+        const from=nodes.find(n=>n.id===c.from), to=nodes.find(n=>n.id===c.to);
+        parts.push(`${from?from.label:c.from} sends ${c.label} to ${to?to.label:c.to}.`);
+      });
+      break;
+    }
+    case "flowdiagram":
+      (step.nodes||[]).forEach((n,i)=>{
+        parts.push(`${i+1}. ${n.label}`+(n.sublabel?": "+n.sublabel:""));
+      });
+      break;
+    case "timeline":
+      (step.nodes||[]).forEach(n=>{
+        parts.push(`${n.label}`+(n.sublabel?": "+n.sublabel:"")+(n.duration?` (${n.duration})`:""));
+      });
+      break;
+    case "comparison":
+      if((step.left_points||[]).length) parts.push(`${step.left_label||"On one side"}: `+step.left_points.join(". "));
+      if((step.right_points||[]).length) parts.push(`${step.right_label||"On the other side"}: `+step.right_points.join(". "));
+      break;
+    case "chalkboard":
+    case "remember":
+    case "summary":
+    case "keypoints":
+      (step.points||[]).forEach(p=>parts.push(typeof p==="object"?p.text:p));
+      break;
+    default:
+      if(step.definition) parts.push(step.definition);
+      if(step.text && step.type!=="title") parts.push(step.text);
+  }
+
+  const full=parts.filter(Boolean).join(" ").trim();
+  return full || step.heading || step.text || "";
+}
+
+// Splits long narration into sentence-sized pieces so ONE flaky/short TTS
+// response can only ever clip a sentence, never the entire step. Pieces are
+// spoken back-to-back in speakChunk() below.
+function splitIntoChunks(text,maxLen){
+  const sentences=text.match(/[^.!?]+[.!?]*(\s+|$)/g)||[text];
+  const chunks=[];let cur="";
+  for(const s of sentences){
+    if(cur && (cur+s).length>maxLen){chunks.push(cur.trim());cur=s;}
+    else cur+=s;
+  }
+  if(cur.trim()) chunks.push(cur.trim());
+  return chunks.length?chunks:[text];
+}
+
+// Speaks ONE chunk of text end-to-end (server TTS with browser-voice
+// fallback). Resolves once that chunk's audio has actually finished playing.
+function speakChunk(text,speed){
   return new Promise(resolve=>{
-    setSpeech(text);setTalking(true);
-    const speed=getSpeed();
-    const fallback=Math.min(Math.max((text.length*55)/speed,2500),10000);
-    const useVoice=$("voiceToggle")&&$("voiceToggle").checked;
-    if(!useVoice){_timers.push(setTimeout(()=>{setTalking(false);resolve();},fallback));return;}
     if(_ttsFailStreak>=TTS_FAIL_STREAK_LIMIT){
       console.warn("[voice] Skipping /tts — failed "+_ttsFailStreak+" times in a row, using browser voice directly");
-      speakWithBrowserTTS(text,speed,()=>{setTalking(false);resolve();});
+      speakWithBrowserTTS(text,speed,resolve);
       return;
     }
-
-    // BUG FIX: ngrok-skip-browser-warning header needed for mobile —
-    // without it, ngrok shows an interception page instead of JSON/audio
-    //
-    // BUG FIX (2026-07-26): was calling /generate here, which runs the
-    // text through the LLM again (ask_teacher()) before doing TTS. That's
-    // correct for the Voice Tutor Q&A widget (raw student question -> needs
-    // an AI answer), but wrong here — `text` is already the final narration
-    // script the whiteboard wrote, so re-running it through the LLM just
-    // adds ~seconds of latency and can rewrite/paraphrase the script with
-    // conversational filler. /tts skips the LLM entirely and speaks the
-    // text as-is.
     fetch(`${VOICE}/tts`,{
       method:"POST",
-      headers:{
-        "Content-Type":"application/json",
-        "ngrok-skip-browser-warning":"true"
-      },
+      headers:{"Content-Type":"application/json","ngrok-skip-browser-warning":"true"},
       body:JSON.stringify({text:text})
     })
     .then(r=>{if(!r.ok)throw new Error(r.status);return r.json();})
     .then(async data=>{
-      const audioUrl = data.audio_url || `${VOICE}${data.audio}`;
-
-      // BUG FIX: fetch audio as blob with bypass header instead of
-      // setting <audio src> directly — avoids ngrok interception on mobile
+      const audioUrl=data.audio_url||`${VOICE}${data.audio}`;
       try{
-        const audioRes = await fetch(audioUrl, {
-          headers:{"ngrok-skip-browser-warning":"true"}
-        });
+        const audioRes=await fetch(audioUrl,{headers:{"ngrok-skip-browser-warning":"true"}});
         if(!audioRes.ok) throw new Error("audio fetch failed "+audioRes.status);
-        const blob = await audioRes.blob();
-        const blobUrl = URL.createObjectURL(blob);
-
+        const blob=await audioRes.blob();
+        const blobUrl=URL.createObjectURL(blob);
         _ttsFailStreak=0; // server gave us valid audio — reset the breaker
         const audio=new Audio(blobUrl);currentAudio=audio;
         audio.playbackRate=speed;
-        audio.onended=()=>{setTalking(false);currentAudio=null;URL.revokeObjectURL(blobUrl);resolve();};
-        audio.onerror=()=>{setTalking(false);currentAudio=null;URL.revokeObjectURL(blobUrl);resolve();};
+        audio.onended=()=>{currentAudio=null;URL.revokeObjectURL(blobUrl);resolve();};
+        audio.onerror=()=>{currentAudio=null;URL.revokeObjectURL(blobUrl);resolve();};
         audio.play().catch(()=>{
-          // Tier 1 got audio but the browser couldn't play it — fall through to Tier 2.
           console.warn("[voice] Edge TTS audio failed to play, falling back to browser voice");
-          speakWithBrowserTTS(text, speed, ()=>{setTalking(false);resolve();});
+          speakWithBrowserTTS(text,speed,resolve);
         });
       }catch(audioErr){
-        // Tier 1 audio fetch failed (e.g. edge-tts returned a 503 — see
-        // ttsand-stt server.py) — fall through to Tier 2.
         _ttsFailStreak++;
         console.warn("[voice] Edge TTS unavailable ("+audioErr.message+"), falling back to browser voice ("+_ttsFailStreak+" fail(s) in a row)");
-        speakWithBrowserTTS(text, speed, ()=>{setTalking(false);resolve();});
+        speakWithBrowserTTS(text,speed,resolve);
       }
     })
     .catch(()=>{
-      // Tier 1 completely unreachable or non-200 (e.g. the 403 Microsoft is
-      // currently returning for edge-tts on this host) — fall through to Tier 2.
       _ttsFailStreak++;
       console.warn("[voice] Edge TTS request failed, falling back to browser voice ("+_ttsFailStreak+" fail(s) in a row)");
-      speakWithBrowserTTS(text, speed, ()=>{setTalking(false);resolve();});
+      speakWithBrowserTTS(text,speed,resolve);
     });
   });
+}
+
+async function narrate(text){
+  text=(text||"").trim();
+  setSpeech(text);setTalking(true);
+  if(!text){setTalking(false);return;}
+  const speed=getSpeed();
+  const useVoice=$("voiceToggle")&&$("voiceToggle").checked;
+
+  if(!useVoice){
+    const fallback=Math.min(Math.max((text.length*55)/speed,2500),20000);
+    await new Promise(r=>{_timers.push(setTimeout(r,fallback));});
+    setTalking(false);
+    return;
+  }
+
+  // Speak sentence-sized chunks back-to-back so the WHOLE step gets narrated
+  // — previously one single TTS call covered the whole (sometimes very long)
+  // narration, so any provider hiccup, timeout, or silent truncation on a
+  // long request cost the entire step's audio instead of just one sentence.
+  const chunks=splitIntoChunks(text,380);
+  for(const chunk of chunks){
+    if(paused){setTalking(false);return;}
+    await speakChunk(chunk,speed);
+  }
+  setTalking(false);
 }
 
 // ── RUNNER ─────────────────────────────────────────────────────────────────────
@@ -1222,21 +1311,15 @@ async function runStep(index){
   if(paused)return;
   stepIndex=index;markStep(index,"active");
   const step=lesson.steps[index];
-  const narrationText=step.narration||step.heading||step.text||"";
-  // BUG FIX: text and voice were completely out of sync — the board used to
-  // finish typing everything FIRST (await renderStep), and only THEN did
-  // narration start (await narrate), as two sequential phases. That meant
-  // by the time the voice began, the full step was already sitting on
-  // screen, and the voice (often a much shorter narration string than the
-  // on-screen content) would play briefly and cut the step short relative
-  // to what was visible — this is what produced "steps flying by, voice
-  // just says one or two words". Running them together means the voice
-  // starts as soon as the board starts drawing, and the step doesn't
-  // advance until BOTH the drawing animation and the narration audio have
-  // actually finished.
+  const narrationText=composeNarration(step);
+  // Run the on-screen animation and the voice narration TOGETHER, and make
+  // sure the voice is built from the SAME content being drawn (see
+  // composeNarration above) — the step only advances once both the drawing
+  // animation and the full (possibly multi-sentence) narration have finished.
   await Promise.all([renderStep(step),narrate(narrationText)]);if(paused)return;
   markStep(index,"done");await wait(350);runStep(index+1);
 }
+
 
 // ── PUBLIC ─────────────────────────────────────────────────────────────────────
 window.startLesson=async function(){
