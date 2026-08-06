@@ -690,9 +690,12 @@ window.skipCapture = function(){
   if(resolve) resolve(null);
 };
 
-// Fetches + plays a server-generated audio URL (Azure or gTTS, either
-// endpoint). Resolves true on successful playback, false on any failure —
-// callers fall back to browser speechSynthesis on false.
+// Fetches + plays a server-generated audio URL. Used by the separate
+// "Ask a question" interrupt feature (Voice Tutor engine, /generate,
+// gTTS) — not the whiteboard narration path (speakChunk, Azure-only,
+// no fallback). Resolves true on successful playback, false on any
+// failure — the Ask-a-Question caller falls back to browser
+// speechSynthesis on false, since that's a different engine by design.
 function playRemoteAudio(audioUrl){
   return new Promise(async resolve=>{
     try{
@@ -1268,21 +1271,15 @@ async function renderStep(step){
   }
 }
 
-// ── VOICE FALLBACK CHAIN (whiteboard narration — the "teacher" voice) ───────
-// Tier 1: Azure AI Speech (ttsand-stt's /tts endpoint), a real Speech
-//         resource, SSML-paced. This is the whiteboard's dedicated engine —
-//         the Voice Tutor Q&A widget deliberately uses a different engine
-//         (Google/gTTS via /generate) so the two features never share a
-//         voice identity or quota.
-// Tier 2: gTTS (Google, free), server-side — the /tts route's backend
-//         fallback whenever Azure is unreachable/misconfigured. Invisible
-//         here except that a successful response's data.engine will read
-//         "azure" or "gtts".
-// Tier 3: Browser speechSynthesis (Web Speech API) — runs entirely
-//         client-side, can't be blocked server-side, but voice quality/
-//         availability depends on the student's device. Used automatically
-//         whenever both server-side tiers fail (see TTS_FAIL_STREAK_LIMIT
-//         below).
+// ── WHITEBOARD VOICE — Azure ONLY, no fallback ───────────────────────────────
+// By explicit request: no gTTS fallback, no browser speechSynthesis
+// fallback. If the server-side Azure call fails, the step is shown silently
+// (text still appears on the board) and a console warning is logged — it
+// does NOT switch to a different, lower-quality voice mid-lesson.
+// speakWithBrowserTTS() below is kept ONLY for the separate Voice Tutor
+// Q&A widget's own fallback path (a different feature, untouched by this
+// change) — it is no longer called anywhere in the whiteboard narration
+// flow (speakChunk below).
 let _browserVoice = null;
 // Holds a strong reference to the currently-speaking utterance so Chrome's
 // GC can't reclaim it mid-speech — see BUG FIX note in speakWithBrowserTTS().
@@ -1377,17 +1374,10 @@ function speakWithBrowserTTS(text, speed, done){
 }
 
 // ── NARRATION ─────────────────────────────────────────────────────────────────
-// Circuit breaker for the server-side TTS call (/tts, Azure -> gTTS chain).
-// A couple of consecutive full failures (both Azure AND gTTS down, or the
-// endpoint unreachable — e.g. Azure misconfigured/quota exhausted) mean
-// it's very unlikely to start working again mid-lesson. Waiting out a
-// fresh network request every single step before falling back to browser
-// voice adds latency to every step and makes the pacing feel even more
-// broken. Once we've seen it fail this many times in a row, skip straight
-// to browser speechSynthesis for the rest of the session — a success
-// resets the counter, so it's not a permanent one-way trip.
+// _ttsFailStreak is kept only as a visible health signal (shown via
+// console.warn) — it no longer triggers a fallback to a different voice.
+// Azure is the only whiteboard narration engine now.
 let _ttsFailStreak=0;
-const TTS_FAIL_STREAK_LIMIT=2;
 
 // BUG FIX (2026-08-01): the real cause of "voice only says 5-6 words per
 // step" — narrate() was only ever speaking step.narration, a SEPARATE field
@@ -1481,15 +1471,12 @@ function splitIntoChunks(text,maxLen){
   return chunks.length?chunks:[text];
 }
 
-// Speaks ONE chunk of text end-to-end (server TTS with browser-voice
-// fallback). Resolves once that chunk's audio has actually finished playing.
+// Speaks ONE chunk of text end-to-end using Azure TTS only. No fallback to
+// gTTS or browser speechSynthesis — if Azure fails, the chunk is skipped
+// (text stays visible on the board, a short pause stands in for the audio)
+// and the failure is logged so it's visible in devtools/telemetry.
 function speakChunk(text,speed){
   return new Promise(resolve=>{
-    if(_ttsFailStreak>=TTS_FAIL_STREAK_LIMIT){
-      console.warn("[voice] Skipping /tts — failed "+_ttsFailStreak+" times in a row, using browser voice directly");
-      speakWithBrowserTTS(text,speed,resolve);
-      return;
-    }
     fetch(`${VOICE}/tts`,{
       method:"POST",
       headers:{"Content-Type":"application/json","ngrok-skip-browser-warning":"true"},
@@ -1503,25 +1490,27 @@ function speakChunk(text,speed){
         if(!audioRes.ok) throw new Error("audio fetch failed "+audioRes.status);
         const blob=await audioRes.blob();
         const blobUrl=URL.createObjectURL(blob);
-        _ttsFailStreak=0; // server gave us valid audio — reset the breaker
+        _ttsFailStreak=0;
         const audio=new Audio(blobUrl);currentAudio=audio;
         audio.playbackRate=speed;
         audio.onended=()=>{currentAudio=null;URL.revokeObjectURL(blobUrl);resolve();};
         audio.onerror=()=>{currentAudio=null;URL.revokeObjectURL(blobUrl);resolve();};
         audio.play().catch(()=>{
-          console.warn("[voice] Whiteboard TTS audio failed to play, falling back to browser voice");
-          speakWithBrowserTTS(text,speed,resolve);
+          _ttsFailStreak++;
+          console.warn("[voice] Azure TTS audio failed to play (no fallback) — skipping this chunk's audio");
+          currentAudio=null;URL.revokeObjectURL(blobUrl);
+          resolve();
         });
       }catch(audioErr){
         _ttsFailStreak++;
-        console.warn("[voice] Whiteboard TTS unavailable ("+audioErr.message+"), falling back to browser voice ("+_ttsFailStreak+" fail(s) in a row)");
-        speakWithBrowserTTS(text,speed,resolve);
+        console.warn("[voice] Azure TTS audio fetch failed ("+audioErr.message+", no fallback, "+_ttsFailStreak+" fail(s) in a row) — skipping this chunk's audio");
+        resolve();
       }
     })
-    .catch(()=>{
+    .catch(err=>{
       _ttsFailStreak++;
-      console.warn("[voice] Whiteboard TTS request failed, falling back to browser voice ("+_ttsFailStreak+" fail(s) in a row)");
-      speakWithBrowserTTS(text,speed,resolve);
+      console.warn("[voice] Azure TTS request failed ("+err.message+", no fallback, "+_ttsFailStreak+" fail(s) in a row) — skipping this chunk's audio. Check AZURE_SPEECH_KEY/AZURE_SPEECH_REGION on the voice service.");
+      resolve();
     });
   });
 }
