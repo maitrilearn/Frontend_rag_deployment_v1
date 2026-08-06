@@ -31,16 +31,43 @@ if (window.speechSynthesis) {
   window.speechSynthesis.onvoiceschanged = () => { _vtBrowserVoice = null; };
 }
 
+// BUG FIX: Android Chrome (and some other Chromium mobile builds) silently
+// truncates a single long SpeechSynthesisUtterance after roughly 32
+// characters — it doesn't error, it just stops producing sound partway
+// through. This is why the browser-voice fallback was only ever speaking
+// the first word or two of an answer. Same fix as whiteboard.html's
+// speakWithBrowserTTS(): never hand the browser one long utterance — split
+// into small word-groups and queue them as separate utterances via chained
+// speak() calls (no cancel() between them), which plays back-to-back with
+// no audible gap.
+function _vtSplitForBrowserTTS(text) {
+  const words = (text || "").split(/\s+/).filter(Boolean);
+  const pieces = []; let cur = [];
+  for (const w of words) {
+    cur.push(w);
+    if (cur.join(" ").length >= 28) { pieces.push(cur.join(" ")); cur = []; }
+  }
+  if (cur.length) pieces.push(cur.join(" "));
+  return pieces.length ? pieces : [text];
+}
+
 function speakWithBrowserTTS(text, onDone) {
   if (!window.speechSynthesis || !text) { if (onDone) onDone(); return; }
   try {
     window.speechSynthesis.cancel();
-    const utter = new SpeechSynthesisUtterance(text);
-    const voice = _vtPickBrowserVoice();
-    if (voice) utter.voice = voice;
-    utter.onend   = () => { if (onDone) onDone(); };
-    utter.onerror = () => { if (onDone) onDone(); };
-    window.speechSynthesis.speak(utter);
+    const voice  = _vtPickBrowserVoice();
+    const pieces = _vtSplitForBrowserTTS(text);
+    let i = 0;
+
+    const speakNext = () => {
+      if (i >= pieces.length) { if (onDone) onDone(); return; }
+      const utter = new SpeechSynthesisUtterance(pieces[i]);
+      if (voice) utter.voice = voice;
+      utter.onend   = () => { i++; speakNext(); };
+      utter.onerror = () => { i++; speakNext(); };
+      window.speechSynthesis.speak(utter);
+    };
+    speakNext();
   } catch (e) {
     console.warn("[voice] browser TTS fallback failed:", e.message);
     if (onDone) onDone();
