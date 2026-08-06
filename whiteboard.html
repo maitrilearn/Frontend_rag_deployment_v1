@@ -139,6 +139,20 @@ html,body{height:100%;overflow:hidden;font-family:'DM Sans',sans-serif;backgroun
 .voice-row{display:flex;align-items:center;gap:8px;padding:0 12px 10px}
 .voice-row label{font-size:12px;color:var(--muted);cursor:pointer;display:flex;align-items:center;gap:6px}
 .voice-row input{accent-color:var(--accent)}
+
+/* ── VOICE CAPTURE PANEL (used for comprehension checks + "Ask" interrupt) ── */
+.capture-panel{display:none;flex-direction:column;gap:6px;margin:0 8px 8px;padding:10px;border-radius:8px;
+  background:rgba(88,166,255,.06);border:1px solid rgba(88,166,255,.25)}
+.capture-panel.show{display:flex}
+.capture-label{font-size:11.5px;color:var(--chalk2);line-height:1.4}
+.capture-input-row{display:flex;gap:6px}
+.capture-input{flex:1;padding:7px 9px;border-radius:6px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-family:inherit;font-size:12px;outline:none}
+.capture-mic-btn{flex-shrink:0;width:34px;border-radius:6px;border:1px solid var(--border);background:transparent;cursor:pointer;font-size:14px}
+.capture-mic-btn.listening{background:rgba(248,81,73,.15);border-color:var(--red)}
+.capture-actions{display:flex;gap:6px}
+.capture-actions button{flex:1;padding:6px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--text);font-family:inherit;font-size:11px;font-weight:600;cursor:pointer}
+.capture-actions button:hover{background:rgba(255,255,255,.06)}
+.capture-actions .cap-submit{color:var(--accent);border-color:rgba(88,166,255,.4)}
 .kbd-hints{padding:4px 12px 8px;display:flex;gap:8px;flex-wrap:wrap}
 .kbd{font-family:'JetBrains Mono',monospace;font-size:10px;padding:2px 6px;border-radius:4px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:var(--muted)}
 .kbd-label{font-size:10px;color:var(--muted)}
@@ -491,7 +505,22 @@ html,body{height:100%;overflow:hidden;font-family:'DM Sans',sans-serif;backgroun
         <input id="topicInput" class="topic-input" placeholder="e.g. Photosynthesis, Docker, Newton's Laws, Git..." aria-label="Lesson topic">
         <button id="startBtn" class="btn btn-primary" onclick="startLesson()">▶ Start Lesson</button>
         <button id="pauseBtn" class="btn btn-secondary" onclick="togglePause()" disabled>⏸ Pause</button>
+        <button id="askBtn" class="btn btn-secondary" onclick="askInterrupt()" disabled>🎤 Ask a Question</button>
         <button class="btn btn-danger" onclick="clearLesson()">✕ Clear Board</button>
+      </div>
+      <!-- Shared voice-capture panel: used both for mid-lesson comprehension
+           checks and for the "Ask a Question" interrupt. Supports speaking
+           (Web Speech API STT) or typing, so it works even without a mic. -->
+      <div class="capture-panel" id="capturePanel">
+        <div class="capture-label" id="captureLabel"></div>
+        <div class="capture-input-row">
+          <input class="capture-input" id="captureInput" placeholder="Type your answer, or tap 🎤" aria-label="Your answer">
+          <button class="capture-mic-btn" id="captureMicBtn" onclick="toggleCaptureSTT()" aria-label="Speak your answer">🎤</button>
+        </div>
+        <div class="capture-actions">
+          <button class="cap-submit" onclick="submitCapture()">✓ Submit</button>
+          <button id="captureSkipBtn" onclick="skipCapture()">⏭ Skip</button>
+        </div>
       </div>
       <div class="speed-row">
         <span class="speed-label">⏱</span>
@@ -585,6 +614,196 @@ function buildStepList(steps){
     </div>`).join("");
 }
 function markStep(i,state){document.querySelectorAll(".step-row").forEach((el,idx)=>{el.className="step-row"+(idx===i?" "+state:idx<i?" done":"");});}
+
+// ── VOICE CAPTURE (shared by comprehension checks + "Ask a Question") ───────
+// Web Speech API STT, same pattern as js/voiceTutor.js, kept local to this
+// page since whiteboard.html doesn't load that file.
+const _CaptureSTT = window.SpeechRecognition || window.webkitSpeechRecognition;
+let _captureRecognition = null;
+let _captureListening   = false;
+let _captureResolve     = null;   // resolves the promise from openCapture()
+
+function _initCaptureSTT(){
+  if(!_CaptureSTT || _captureRecognition) return !!_captureRecognition;
+  _captureRecognition = new _CaptureSTT();
+  _captureRecognition.continuous = false;
+  _captureRecognition.interimResults = true;
+  _captureRecognition.lang = "en-IN";
+  _captureRecognition.maxAlternatives = 1;
+  return true;
+}
+
+window.toggleCaptureSTT = function(){
+  const micBtn = $("captureMicBtn");
+  if(!_initCaptureSTT()){
+    setSpeech("Voice input isn't supported on this browser — please type your answer.");
+    return;
+  }
+  if(_captureListening){ _captureRecognition.stop(); return; }
+
+  _captureListening = true;
+  if(micBtn) micBtn.classList.add("listening");
+
+  _captureRecognition.onresult = (event)=>{
+    const last = event.results[event.results.length-1];
+    const transcript = last[0].transcript;
+    const input = $("captureInput");
+    if(input) input.value = transcript;
+    if(last.isFinal){
+      _captureListening = false;
+      if(micBtn) micBtn.classList.remove("listening");
+      submitCapture();
+    }
+  };
+  _captureRecognition.onerror = ()=>{ _captureListening=false; if(micBtn) micBtn.classList.remove("listening"); };
+  _captureRecognition.onend   = ()=>{ _captureListening=false; if(micBtn) micBtn.classList.remove("listening"); };
+
+  try{ _captureRecognition.start(); }
+  catch(e){ _captureListening=false; if(micBtn) micBtn.classList.remove("listening"); }
+};
+
+// Opens the shared capture panel with `label`, resolves with the student's
+// text (spoken or typed), or null if they hit Skip. Only one capture can be
+// open at a time — callers should check that a lesson is actually running.
+function openCapture(label, {skippable=true}={}){
+  $("captureLabel").textContent = label;
+  $("captureInput").value = "";
+  $("captureSkipBtn").style.display = skippable ? "" : "none";
+  $("capturePanel").classList.add("show");
+  $("captureInput").focus();
+  return new Promise(resolve=>{ _captureResolve = resolve; });
+}
+function _closeCapture(){
+  $("capturePanel").classList.remove("show");
+  if(_captureRecognition && _captureListening) _captureRecognition.stop();
+}
+window.submitCapture = function(){
+  const v = ($("captureInput").value || "").trim();
+  if(!v) return;
+  const resolve = _captureResolve; _captureResolve = null;
+  _closeCapture();
+  if(resolve) resolve(v);
+};
+window.skipCapture = function(){
+  const resolve = _captureResolve; _captureResolve = null;
+  _closeCapture();
+  if(resolve) resolve(null);
+};
+
+// Fetches + plays a server-generated audio URL (Azure or gTTS, either
+// endpoint). Resolves true on successful playback, false on any failure —
+// callers fall back to browser speechSynthesis on false.
+function playRemoteAudio(audioUrl){
+  return new Promise(async resolve=>{
+    try{
+      const audioRes = await fetch(audioUrl, {headers:{"ngrok-skip-browser-warning":"true"}});
+      if(!audioRes.ok) throw new Error("audio fetch failed "+audioRes.status);
+      const blob = await audioRes.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const audio = new Audio(blobUrl); currentAudio = audio;
+      audio.onended = ()=>{ currentAudio=null; URL.revokeObjectURL(blobUrl); resolve(true); };
+      audio.onerror = ()=>{ currentAudio=null; URL.revokeObjectURL(blobUrl); resolve(false); };
+      audio.play().catch(()=>{ currentAudio=null; URL.revokeObjectURL(blobUrl); resolve(false); });
+    }catch(e){ resolve(false); }
+  });
+}
+
+// ── MID-LESSON COMPREHENSION CHECK ───────────────────────────────────────────
+// Triggered from runStep() when a step carries a "check" object (added by
+// the whiteboard lesson prompt — see build_prompt() in routes/whiteboard.py).
+// Speaks the question with the Azure "teacher" voice (same /tts chain as
+// narration), captures the answer by voice or text, grades it against the
+// backend, and speaks brief feedback before the lesson continues.
+async function runComprehensionCheck(check){
+  const q = (check.question||"").trim();
+  if(!q) return;
+  const useVoice = $("voiceToggle") && $("voiceToggle").checked;
+
+  setStatus("CHECK-IN", "checking");
+  setSpeech("🤔 Quick check: " + q);
+  setTalking(true);
+  if(useVoice) await speakChunk(q, getSpeed());
+  else await wait(1200);
+  setTalking(false);
+  if(paused) return;
+
+  const answer = await openCapture("🤔 " + q, {skippable:true});
+  if(paused) return;
+
+  if(!answer){
+    setSpeech("No worries — let's keep going!");
+    setStatus("TEACHING", "teaching");
+    return;
+  }
+
+  setStatus("GRADING", "loading");
+  let verdict = {verdict:"partial", feedback:"Good effort — let's continue."};
+  try{
+    const res = await fetch(`${BACKEND}/whiteboard/check-answer`, {
+      method: "POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({question:q, expects:check.expects||"", answer})
+    });
+    if(res.ok) verdict = await res.json();
+  }catch(e){ console.warn("[check] grading request failed:", e); }
+  if(paused) return;
+
+  const icon = verdict.verdict==="correct" ? "✅" : verdict.verdict==="incorrect" ? "💡" : "👍";
+  setSpeech(icon + " " + verdict.feedback);
+  setStatus("TEACHING", "teaching");
+  setTalking(true);
+  if(useVoice) await speakChunk(verdict.feedback, getSpeed());
+  else await wait(1200);
+  setTalking(false);
+}
+
+// ── "ASK A QUESTION" INTERRUPT ───────────────────────────────────────────────
+// Lets the student interrupt a running/paused lesson to ask a free-form
+// question. Pauses exactly where the lesson was, answers through the Voice
+// Tutor engine (Google/gTTS — deliberately NOT Azure, keeping Azure reserved
+// for lesson narration), then resumes from the same step.
+window.askInterrupt = async function(){
+  if(!running || !lesson) return;
+  if(_captureResolve) return; // a capture (check or ask) is already open
+
+  const resumeIndex = stepIndex;
+  const wasPaused    = paused;
+  paused = true;
+  clearAllTimers();
+  setStatus("LISTENING", "paused");
+
+  const question = await openCapture("🎤 Ask your question — speak or type", {skippable:true});
+  if(!question){
+    if(!wasPaused){ paused=false; setStatus("TEACHING","teaching"); runStep(resumeIndex); }
+    else setStatus("PAUSED","paused");
+    return;
+  }
+
+  setSpeech(`❓ "${question}"`);
+  setStatus("THINKING", "loading");
+  try{
+    const res  = await fetch(`${VOICE}/generate`, {
+      method: "POST",
+      headers: {"Content-Type":"application/json","ngrok-skip-browser-warning":"true"},
+      body: JSON.stringify({prompt: question})
+    });
+    const data = await res.json().catch(()=>({}));
+    const answerText = data.text || "Sorry, I couldn't get an answer right now.";
+    setSpeech("💬 " + answerText);
+    setStatus("ANSWERING", "teaching");
+    setTalking(true);
+    let played = false;
+    if(res.ok && data.audio_url) played = await playRemoteAudio(data.audio_url);
+    if(!played) await new Promise(resolve => speakWithBrowserTTS(answerText, getSpeed(), resolve));
+    setTalking(false);
+  }catch(e){
+    console.warn("[ask] failed:", e);
+    setSpeech("Sorry, I couldn't reach the voice tutor right now.");
+  }
+
+  if(!wasPaused){ paused=false; setStatus("TEACHING","teaching"); runStep(resumeIndex); }
+  else setStatus("PAUSED","paused");
+};
 
 async function typeInto(el,text,speed=30){
   if(!el)return;
@@ -1049,17 +1268,21 @@ async function renderStep(step){
   }
 }
 
-// ── VOICE FALLBACK CHAIN ─────────────────────────────────────────────────────
-// Tier 1: Edge TTS (ttsand-stt.onrender.com) — best quality (Neerja voice),
-//         but Microsoft has been blocking this service's requests from
-//         Render's IP with a hard 403, so treat it as "may be down".
-// Tier 2: Browser speechSynthesis (Web Speech API) — runs entirely
+// ── VOICE FALLBACK CHAIN (whiteboard narration — the "teacher" voice) ───────
+// Tier 1: Azure AI Speech (ttsand-stt's /tts endpoint), a real Speech
+//         resource, SSML-paced. This is the whiteboard's dedicated engine —
+//         the Voice Tutor Q&A widget deliberately uses a different engine
+//         (Google/gTTS via /generate) so the two features never share a
+//         voice identity or quota.
+// Tier 2: gTTS (Google, free), server-side — the /tts route's backend
+//         fallback whenever Azure is unreachable/misconfigured. Invisible
+//         here except that a successful response's data.engine will read
+//         "azure" or "gtts".
+// Tier 3: Browser speechSynthesis (Web Speech API) — runs entirely
 //         client-side, can't be blocked server-side, but voice quality/
-//         availability depends on the student's device and won't match
-//         Neerja. Used automatically whenever Tier 1 fails.
-// Tier 3: Azure AI Speech — planned, not implemented yet. Would replace
-//         Tier 1 with a real authenticated API instead of the unofficial
-//         edge-tts trick, once set up.
+//         availability depends on the student's device. Used automatically
+//         whenever both server-side tiers fail (see TTS_FAIL_STREAK_LIMIT
+//         below).
 let _browserVoice = null;
 // Holds a strong reference to the currently-speaking utterance so Chrome's
 // GC can't reclaim it mid-speech — see BUG FIX note in speakWithBrowserTTS().
@@ -1154,11 +1377,10 @@ function speakWithBrowserTTS(text, speed, done){
 }
 
 // ── NARRATION ─────────────────────────────────────────────────────────────────
-// Circuit breaker for the server-side TTS call (/tts). Server logs show
-// Edge TTS is currently being 403'd by Microsoft from this host's IP, and
-// while server.py falls back to gTTS internally, a couple of consecutive
-// full failures (both edge_tts AND gTTS down, or the endpoint unreachable)
-// mean it's very unlikely to start working again mid-lesson. Waiting out a
+// Circuit breaker for the server-side TTS call (/tts, Azure -> gTTS chain).
+// A couple of consecutive full failures (both Azure AND gTTS down, or the
+// endpoint unreachable — e.g. Azure misconfigured/quota exhausted) mean
+// it's very unlikely to start working again mid-lesson. Waiting out a
 // fresh network request every single step before falling back to browser
 // voice adds latency to every step and makes the pacing feel even more
 // broken. Once we've seen it fail this many times in a row, skip straight
@@ -1287,18 +1509,18 @@ function speakChunk(text,speed){
         audio.onended=()=>{currentAudio=null;URL.revokeObjectURL(blobUrl);resolve();};
         audio.onerror=()=>{currentAudio=null;URL.revokeObjectURL(blobUrl);resolve();};
         audio.play().catch(()=>{
-          console.warn("[voice] Edge TTS audio failed to play, falling back to browser voice");
+          console.warn("[voice] Whiteboard TTS audio failed to play, falling back to browser voice");
           speakWithBrowserTTS(text,speed,resolve);
         });
       }catch(audioErr){
         _ttsFailStreak++;
-        console.warn("[voice] Edge TTS unavailable ("+audioErr.message+"), falling back to browser voice ("+_ttsFailStreak+" fail(s) in a row)");
+        console.warn("[voice] Whiteboard TTS unavailable ("+audioErr.message+"), falling back to browser voice ("+_ttsFailStreak+" fail(s) in a row)");
         speakWithBrowserTTS(text,speed,resolve);
       }
     })
     .catch(()=>{
       _ttsFailStreak++;
-      console.warn("[voice] Edge TTS request failed, falling back to browser voice ("+_ttsFailStreak+" fail(s) in a row)");
+      console.warn("[voice] Whiteboard TTS request failed, falling back to browser voice ("+_ttsFailStreak+" fail(s) in a row)");
       speakWithBrowserTTS(text,speed,resolve);
     });
   });
@@ -1334,7 +1556,9 @@ async function narrate(text){
 async function runStep(index){
   if(!lesson||index>=lesson.steps.length){
     setStatus("DONE ✓","");setSpeech("Lesson complete! Well done! 🎉");
-    setTalking(false);if($("startBtn"))$("startBtn").disabled=false;if($("pauseBtn"))$("pauseBtn").disabled=true;running=false;return;
+    setTalking(false);if($("startBtn"))$("startBtn").disabled=false;if($("pauseBtn"))$("pauseBtn").disabled=true;
+    if($("askBtn"))$("askBtn").disabled=true;
+    running=false;return;
   }
   if(paused)return;
   stepIndex=index;markStep(index,"active");
@@ -1345,6 +1569,15 @@ async function runStep(index){
   // composeNarration above) — the step only advances once both the drawing
   // animation and the full (possibly multi-sentence) narration have finished.
   await Promise.all([renderStep(step),narrate(narrationText)]);if(paused)return;
+
+  // A real teacher pauses to check understanding, not just talks — steps
+  // carrying a "check" object (see build_prompt() in routes/whiteboard.py)
+  // pause here for a quick comprehension check before moving on.
+  if(step.check && step.check.question){
+    await runComprehensionCheck(step.check);
+    if(paused)return;
+  }
+
   markStep(index,"done");await wait(350);runStep(index+1);
 }
 
@@ -1422,10 +1655,11 @@ window.startLesson=async function(){
       citBanner.classList.remove("show");
       citFallback.style.display = "block";
     }
+    if($("askBtn"))$("askBtn").disabled=false;
     runStep(0);
   }catch(err){
     console.error(err);setStatus("ERROR","error");setSpeech("Could not load lesson. Check backend.");
-    $("startBtn").disabled=false;$("pauseBtn").disabled=true;running=false;
+    $("startBtn").disabled=false;$("pauseBtn").disabled=true;if($("askBtn"))$("askBtn").disabled=true;running=false;
   }
 };
 
@@ -1438,6 +1672,8 @@ window.togglePause=function(){
 window.clearLesson=function(){
   clearAllTimers();clearBoard();lesson=null;running=false;paused=false;
   $("startBtn").disabled=false;$("pauseBtn").disabled=true;$("pauseBtn").textContent="⏸ Pause";
+  if($("askBtn"))$("askBtn").disabled=true;
+  _closeCapture();_captureResolve=null;
   $("stepList").innerHTML="";setStatus("READY","");
   setSpeech("Hello! I can teach any subject — enter a topic! 👋");
   document.querySelectorAll(".rag-badge").forEach(e=>e.remove());

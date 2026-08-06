@@ -1,19 +1,19 @@
 /**
  * MaitriLearn Voice Tutor
  * STT: Web Speech API (browser built-in, free, no server)
- * TTS: 3-tier fallback chain —
- *   Tier 1: Edge TTS on the voice service (Indian English, best quality —
- *           "Neerja"). Microsoft has intermittently blocked this from
- *           Render's IP, so it's treated as "may be down".
- *   Tier 2: Google Translate TTS free tier (gTTS), server-side, Indian
- *           English accent. The backend automatically retries with this
- *           whenever Edge TTS fails (see generate_speech() in
- *           ttsand-stt/server.py) — invisible here except that a
- *           successful response's data.engine will read "edge" or "gtts".
- *   Tier 3: Browser speechSynthesis (Web Speech API), fully client-side,
+ * TTS: 2-tier fallback chain — Google voice only, by design. This is
+ *      deliberately separate from the whiteboard's engine (Azure AI Speech,
+ *      see ttsand-stt/server.py generate_speech_whiteboard()) so the two
+ *      features never share a voice identity or quota — Voice Tutor never
+ *      touches Azure.
+ *   Tier 1: gTTS (Google Translate TTS free tier), server-side, Indian
+ *           English accent (see generate_speech_voice_tutor() in
+ *           ttsand-stt/server.py). data.engine on a successful response
+ *           will read "gtts".
+ *   Tier 2: Browser speechSynthesis (Web Speech API), fully client-side,
  *           always available but lower/inconsistent quality. Used only
- *           when /generate returns a non-200 (both server tiers failed)
- *           or the returned audio fails to fetch/play.
+ *           when /generate returns a non-200 (gTTS failed) or the
+ *           returned audio fails to fetch/play.
  */
 
 // ── Browser TTS fallback (Tier 2) ───────────────────────────────────────────
@@ -158,7 +158,7 @@ window.generateVoiceTutor = async function () {
     });
 
     if (!res.ok) {
-      // Tier 1 (Edge TTS) failed at the TTS step after already producing a
+      // Tier 1 (gTTS) failed at the TTS step after already producing a
       // valid AI answer (tts_failed) — fall through to Tier 2 (browser voice)
       // instead of leaving the student with silent text.
       const errData = await res.json().catch(() => ({}));
@@ -167,7 +167,7 @@ window.generateVoiceTutor = async function () {
         if (resultEl) resultEl.classList.add("show");
         if (status)   { status.className = "vstatus playing"; status.textContent = "Playing (backup voice)... 🔊"; }
         if (errorEl)  {
-          errorEl.textContent = "🎤 Neerja voice is temporarily unavailable — using your device's voice instead.";
+          errorEl.textContent = "🎤 Server voice is temporarily unavailable — using your device's voice instead.";
           errorEl.classList.add("show");
         }
         speakWithBrowserTTS(errData.text, () => {
@@ -194,11 +194,11 @@ window.generateVoiceTutor = async function () {
       });
       if (!audioRes.ok) throw new Error("Audio fetch failed: " + audioRes.status);
     } catch (audioErr) {
-      // Tier 1 audio unreachable — fall through to Tier 2 (browser voice).
-      console.warn("[voice] Edge TTS audio unavailable, falling back to browser voice:", audioErr.message);
+      // Tier 1 (gTTS) audio unreachable — fall through to Tier 2 (browser voice).
+      console.warn("[voice] gTTS audio unavailable, falling back to browser voice:", audioErr.message);
       if (status)  { status.className = "vstatus playing"; status.textContent = "Playing (backup voice)... 🔊"; }
       if (errorEl) {
-        errorEl.textContent = "🎤 Neerja voice is temporarily unavailable — using your device's voice instead.";
+        errorEl.textContent = "🎤 Server voice is temporarily unavailable — using your device's voice instead.";
         errorEl.classList.add("show");
       }
       speakWithBrowserTTS(data.text, () => {
@@ -217,16 +217,16 @@ window.generateVoiceTutor = async function () {
         await player.play();
         if (status) { status.className = "vstatus done"; status.textContent = "Done ✅"; }
       } catch (playErr) {
-        // BUG FIX (2026-07-26): Tier 1 audio was fetched successfully but the
+        // BUG FIX (2026-07-26): Tier 1 (gTTS) audio was fetched successfully but the
         // <audio> element couldn't play it ("no supported source" etc.) —
         // this rejection wasn't caught before, so it fell through to the
         // outer catch and surfaced the raw browser error instead of falling
         // back to Tier 3, same pattern whiteboard.html already handles.
-        console.warn("[voice] Edge TTS audio failed to play, falling back to browser voice:", playErr.message);
+        console.warn("[voice] gTTS audio failed to play, falling back to browser voice:", playErr.message);
         URL.revokeObjectURL(blobUrl);
         if (status)  { status.className = "vstatus playing"; status.textContent = "Playing (backup voice)... 🔊"; }
         if (errorEl) {
-          errorEl.textContent = "🎤 Neerja voice is temporarily unavailable — using your device's voice instead.";
+          errorEl.textContent = "🎤 Server voice is temporarily unavailable — using your device's voice instead.";
           errorEl.classList.add("show");
         }
         speakWithBrowserTTS(data.text, () => {
